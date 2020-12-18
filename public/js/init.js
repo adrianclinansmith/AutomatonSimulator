@@ -30,25 +30,33 @@ class Circle {
             const tail = this.edge.circle;
             const control = { x: this.edge.controlX, y: this.edge.controlY };
 
+            // calculate the slope of the new control line
+            // calculate the midpoint between the new head & tail
             const [x0, x1] = x < tail.x ? [x, tail.x] : [tail.x, x];
             const [y0, y1] = x < tail.x ? [y, tail.y] : [tail.y, y];
             const slope = (x0 - x1) / (y1 - y0);
             const [midX, midY] = [(x0 + x1) / 2, (y0 + y1) / 2];
 
+            // calculate the midpoint of the previous head & tail
+            // calculate the distance from the old midpoint to the control point
             const oldMidPoint = { x: (this.x + tail.x) / 2, y: (this.y + tail.y) / 2 };
             const distance = Math.hypot(oldMidPoint.x - control.x, oldMidPoint.y - control.y);
-            console.log('slope = ' + slope);
-            console.log(`oldMid = (${oldMidPoint.x}, ${oldMidPoint.y}) cntrl = (${control.x}, ${control.y})`);
             // drawCircle(midX, midY, distance, colour = 'red');
 
+            // derive the quadratic formula from the circle eqatuion with the new midpoint & radius = distance,
+            // and the linear equation centered at the new midpoint
+            // this gives the x-intercepts of the circle & new control line
             const a = slope * slope + 1;
             const b = (-2 - 2 * slope * slope) * midX;
             const c = a * midX * midX - distance * distance;
             let root = Math.sqrt(b * b - 4 * a * c);
             root = isNaN(root) ? 0 : root;
+            // move the control point such that it follows the new control line & remains the same distance
+            // from the mid point
             const controlX = (-b + root) / (2 * a);
             const controlY = slope * (controlX - midX) + midY;
-            console.log(`a=${a}, b=${b}, c=${c}, contX=${controlX}, sqrt=${b * b - 4 * a * c}`);
+            console.log(`old = (${this.edge.controlX} ${this.edge.controlY}), new = (${controlX} ${controlY})`);
+            // console.log(`a=${a}, b=${b}, c=${c}, contX=${controlX}, sqrt=${b * b - 4 * a * c}`);
             this.edge.controlX = controlX;
             this.edge.controlY = controlY;
         }
@@ -65,18 +73,21 @@ class Circle {
         // The control point must travel along f.
         const head = { x: this.x, y: this.y };
         const tail = this.edge.circle;
-        const f = function(x) {
-            return perpendicularFunction(x, head, tail);
+        const f = function(x, inverse = false) {
+            return perpendicularFunction(x, head, tail, inverse);
         };
-        // draw the control
-        drawCircle(x, f(x), 5, 'red');
+        // For the control point, use (x, f(x)) if f is more horizontal,
+        // else if f is more vertical use (g(y), y), where g is the inverse of f.
+        const fIsVertical = Math.abs(head.y - tail.y) < Math.abs(head.x - tail.x);
+        const xval = fIsVertical ? f(y, true) : x;
+        const yval = fIsVertical ? y : f(x);
+        // Draw the control and the edge, then update the control's coordinates.
+        drawCircle(xval, yval, 5, 'red');
+        drawQuadraticCurve(this.x, this.y, xval, yval, tail.x, tail.y);
+        this.edge.controlX = xval;
+        this.edge.controlY = yval;
+        // Draw the control line (f) and a horzidonal version of the line between the head and tail
         drawLine(5, f(5), 500, f(500), 'red');
-        // draw the edge
-        drawQuadraticCurve(this.x, this.y, x, f(x), tail.x, tail.y);
-        this.edge.controlX = x;
-        this.edge.controlY = f(x);
-        console.log(`cntrol = (${this.edge.controlX}, ${this.edge.controlY})`);
-        // draw flat version of line (temp)
         const distance = Math.hypot(this.x - tail.x, this.y - tail.y);
         drawLine(this.x, this.y, this.x - distance, this.y, 'green');
     }
@@ -121,7 +132,7 @@ drawQuadraticCurve(10, 50, 110, 100, 210, 50);
 drawQuadraticCurve(10, 50, 110, 150, 210, 50);
 drawQuadraticCurve(10, 50, 110, 200, 210, 50);
 
-const circles = [new Circle(276, 86, 30), new Circle(128, 280, 30)];
+const circles = [new Circle(370, 86, 30), new Circle(228, 280, 30)];
 circles[0].makeEdgeTo(circles[1]);
 // circles[1].makeEdgeTo(circles[2]);
 circles[0].drawEdge();
@@ -145,34 +156,34 @@ circles[1].draw();
 // Event Listeners
 // ********************************
 
-let lastDragPoint = null;
+let dragInfo = null;
 let controlIndex = null;
 
 canvas.addEventListener('mousedown', function(event) {
     const { x, y } = eventPointInCanvas(event);
-    lastDragPoint = { x, y };
-    console.log(`(${x.toFixed(2)}, ${y.toFixed(2)})`);
     for (let i = 0; i < circles.length; i++) {
-        if (circles[i].controlContains(x, y)) {
+        if (circles[i].contains(x, y)) {
+            dragInfo = { index: i, offset: { x: circles[i] - x, y: circles[i] - y } };
+        } else if (circles[i].controlContains(x, y)) {
+            console.log('CLICKED CONTROL with i = ' + i);
             controlIndex = i;
         }
     }
 });
 
 canvas.addEventListener('mouseup', function(event) {
-    lastDragPoint = null;
+    // lastDragPoint = null;
+    dragInfo = null;
     controlIndex = null;
 });
 
 canvas.addEventListener('mousemove', function(event) {
-    if (lastDragPoint) {
+    if (dragInfo !== null || controlIndex !== null) {
         context.clearRect(0, 0, canvas.width, canvas.height);
         const { x, y } = eventPointInCanvas(event);
-        const dx = x - lastDragPoint.x;
-        const dy = y - lastDragPoint.y;
         for (let i = 0; i < circles.length; i++) {
-            if (circles[i].contains(x, y)) {
-                circles[i].draw(circles[i].x + dx, circles[i].y + dy);
+            if (i === dragInfo?.index) {
+                circles[i].draw(x, y);
             } else {
                 circles[i].draw();
             }
@@ -184,7 +195,6 @@ canvas.addEventListener('mousemove', function(event) {
                 circles[i].drawEdge();
             }
         }
-        lastDragPoint = { x, y };
     }
 });
 
@@ -222,10 +232,13 @@ function drawQuadraticCurve(beginX, beginY, contX, contY, endX, endY, colour = '
     context.stroke();
 }
 
-function perpendicularFunction(x, p0, p1) {
+function perpendicularFunction(x, p0, p1, inverse = false) {
     const [x0, x1] = p0.x < p1.x ? [p0.x, p1.x] : [p1.x, p0.x];
     const [y0, y1] = p0.x < p1.x ? [p0.y, p1.y] : [p1.y, p0.y];
     const slope = (x0 - x1) / (y1 - y0);
     const [xmid, ymid] = [(x0 + x1) / 2, (y0 + y1) / 2];
+    if (inverse) {
+        return (x - ymid) / slope + xmid;
+    }
     return slope * (x - xmid) + ymid;
 }
