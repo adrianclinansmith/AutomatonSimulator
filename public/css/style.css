@@ -1,0 +1,10 @@
+body {
+    background: #333;
+    color: #fff;
+    position: relative;
+    text-align: center;
+}
+
+canvas {
+    background-color: #ebe9e9;
+}

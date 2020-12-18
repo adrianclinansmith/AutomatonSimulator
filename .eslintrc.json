@@ -1,0 +1,24 @@
+{
+    "plugins": [ 
+        "jquery"
+    ],
+    "env": {
+        "browser": true,
+        "commonjs": true,
+        "es2021": true,
+        "jquery": true
+    },
+    "extends": [
+        "standard",
+        "plugin:jquery/deprecated"
+    ],
+    "parserOptions": {
+        "ecmaVersion": 12
+    },
+    "ignorePatterns": ["jquery-3.5.1.min.js"],
+    "rules": {
+        "indent": ["error", 4],
+        "semi": ["error", "always"],
+        "space-before-function-paren": ["error", "never"]
+    }
+}
