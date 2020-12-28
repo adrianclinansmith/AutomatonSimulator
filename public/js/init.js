@@ -19,6 +19,116 @@ class Edge {
         this.head = head;
         this.tail = tail;
         this.control = control;
+        this.controlDistanceFromMid = 0;
+        this.controlIsForward = false;
+    }
+
+    draw() {
+        const head = this.head;
+        const tail = this.tail;
+        const control = this.control;
+        drawQuadraticCurve(head.x, head.y, control.x, control.y, tail.x, tail.y);
+        const vertex = this.vertex();
+        drawCircle(vertex.x, vertex.y, 5, 'red');
+        drawLine(this.arrowhead.tip, this.arrowhead.corner1);
+        drawLine(this.arrowhead.tip, this.arrowhead.corner2);
+    }
+
+    setArrowhead() {
+        const incrementsArray = [0.001, 0.005, 0.01, 0.05];
+        let increment = incrementsArray.pop();
+        let t = 0;
+        while (increment && t < 0.5) {
+            const pt = this.bezier(t);
+            if (this.tail.contains(pt.x, pt.y)) {
+                t += increment;
+            } else {
+                t -= increment;
+                increment = incrementsArray.pop();
+                t += increment || 0;
+            }
+        }
+        if (t >= 0.5) {
+            return;
+        }
+        const tip = this.bezier(t);
+        const ptForSlope = this.bezier(t + 0.01);
+        // src: http://www.dbp-consulting.com/tutorials/canvas/CanvasArrow.html
+        const angle = Math.atan2(ptForSlope.y - tip.y, ptForSlope.x - tip.x);
+        const theta = Math.PI / 4;
+        const angle1 = Math.PI + angle + theta;
+        const angle2 = Math.PI + angle - theta;
+        const h = Math.abs(7 / Math.cos(theta));
+        const corner1 = { x: tip.x - Math.cos(angle1) * h, y: tip.y - Math.sin(angle1) * h };
+        const corner2 = { x: tip.x - Math.cos(angle2) * h, y: tip.y - Math.sin(angle2) * h };
+        this.arrowhead = { tip, corner1, corner2 };
+    }
+
+    setControl(pt) {
+        this.control.x = pt.x;
+        this.control.y = pt.y;
+    }
+
+    bezier(t) {
+        const p0 = this.tail;
+        const p1 = this.control;
+        const p2 = this.head;
+        const x = p1.x + (1 - t) * (1 - t) * (p0.x - p1.x) + t * t * (p2.x - p1.x);
+        const y = p1.y + (1 - t) * (1 - t) * (p0.y - p1.y) + t * t * (p2.y - p1.y);
+        return { x, y };
+    }
+
+    contains(x, y) {
+        const [x0, y0] = [this.head.x, this.head.y];
+        const [x1, y1] = [this.control.x, this.control.y];
+        const [x2, y2] = [this.tail.x, this.tail.y];
+        const headTailDistance = Math.hypot(x0 - x2, y0 - y2);
+        const max = Math.round(((headTailDistance + this.controlDistanceFromMid) / 100) * 100) / 10;
+        for (let n = 0; n <= max; n++) {
+            const t = n / max;
+            // quadratic bezier equation
+            const xt = x1 + (1 - t) * (1 - t) * (x0 - x1) + t * t * (x2 - x1);
+            const yt = y1 + (1 - t) * (1 - t) * (y0 - y1) + t * t * (y2 - y1);
+            const inX = x >= xt - 5 && x <= xt + 5;
+            const inY = y >= yt - 5 && y <= yt + 5;
+            if (inX && inY) {
+                drawCircle(xt, yt, 5, 'green');
+                return true;
+            }
+        }
+        return false;
+    }
+
+    vertex() {
+        return this.bezier(0.5);
+    }
+
+    midBase() {
+        const x = (this.head.x + this.tail.x) / 2;
+        const y = (this.head.y + this.tail.y) / 2;
+        return { x, y };
+    }
+
+    // The axis of symmetry is a linear function that is perpendicular to
+    // a straight line contecting the head and tail.
+    axisOfSymmetry(x, inverse = false) {
+        const h = this.head;
+        const t = this.tail;
+        const slope = (h.x - t.x) / (t.y - h.y);
+        const mid = { x: (h.x + t.x) / 2, y: (h.y + t.y) / 2 };
+        if (inverse) {
+            return (x - mid.y) / slope + mid.x;
+        }
+        return slope * (x - mid.x) + mid.y;
+    }
+
+    isVerticalParabola() {
+        return Math.abs(this.head.y - this.tail.y) < Math.abs(this.head.x - this.tail.x);
+    }
+
+    vertexContains(x, y) {
+        const distance = distanceBetween(this.vertex(), { x, y });
+        return distance <= 5;
     }
 }
 
@@ -40,52 +150,7 @@ class Circle {
         if (this.outEdge === null) {
             return;
         }
-        const tail = this.outEdge.tail;
-        drawQuadraticCurve(this.x, this.y, this.outEdge.controlX, this.outEdge.controlY, tail.x, tail.y);
-        drawCircle(this.outEdge.controlX, this.outEdge.controlY, 5, 'red');
-        this.drawArrowhead();
-    }
-
-    drawArrowhead() {
-        const tail = this.outEdge.tail;
-        const incrementsArray = [0.001, 0.005, 0.01, 0.05];
-        let increment = incrementsArray.pop();
-        let t = 0;
-        while (increment && t < 0.5) {
-            const pt = this.bezier(t);
-            if (tail.contains(pt.x, pt.y)) {
-                t += increment;
-            } else {
-                t -= increment;
-                increment = incrementsArray.pop();
-                t += increment || 0;
-            }
-        }
-        if (t >= 0.5) {
-            return;
-        }
-        const intersect = this.bezier(t);
-        const ptForSlope = this.bezier(t + 0.01);
-        // src: http://www.dbp-consulting.com/tutorials/canvas/CanvasArrow.html
-        const angle = Math.atan2(ptForSlope.y - intersect.y, ptForSlope.x - intersect.x);
-        const theta = Math.PI / 4;
-        const angle1 = Math.PI + angle + theta;
-        const angle2 = Math.PI + angle - theta;
-        const h = Math.abs(7 / Math.cos(theta));
-        const pa = { x: intersect.x - Math.cos(angle1) * h, y: intersect.y - Math.sin(angle1) * h };
-        const pb = { x: intersect.x - Math.cos(angle2) * h, y: intersect.y - Math.sin(angle2) * h };
-        drawLine(intersect, pa);
-        drawLine(intersect, pb);
-    }
-
-    bezier(t) {
-        const p0 = this.outEdge.tail;
-        const p1 = { x: this.outEdge.controlX, y: this.outEdge.controlY };
-        const p2 = this.outEdge.head;
-
-        const x = p1.x + (1 - t) * (1 - t) * (p0.x - p1.x) + t * t * (p2.x - p1.x);
-        const y = p1.y + (1 - t) * (1 - t) * (p0.y - p1.y) + t * t * (p2.y - p1.y);
-        return { x, y };
+        this.outEdge.draw();
     }
 
     setCenter(x, y) {
@@ -99,63 +164,57 @@ class Circle {
         if (edge == null) {
             return;
         }
-        const head = { x: edge.head.x, y: edge.head.y };
-        const tail = { x: edge.tail.x, y: edge.tail.y };
+        const head = edge.head;
+        const tail = edge.tail;
         const f = function(x, inverse = false) {
-            return perpendicularFunction(x, head, tail, inverse);
+            return edge.axisOfSymmetry(x, inverse);
         };
-        const midHeadTail = { x: (head.x + tail.x) / 2, y: (head.y + tail.y) / 2 };
-        const m = (f(500) - f(5)) / (500 - 5);
-        let distanceFromControlToMid = edge.controlDistanceFromMid;
+        let controlDistanceFromMid = edge.controlDistanceFromMid;
         if (edge.controlIsForward && (head.y > tail.y || (head.y === tail.y && head.x < tail.x))) {
-            distanceFromControlToMid = -1 * distanceFromControlToMid;
+            controlDistanceFromMid = -1 * controlDistanceFromMid;
         } else if (!edge.controlIsForward && (head.y < tail.y || (head.y === tail.y && head.x > tail.x))) {
-            distanceFromControlToMid = -1 * distanceFromControlToMid;
+            controlDistanceFromMid = -1 * controlDistanceFromMid;
         }
+        const m = (f(500) - f(5)) / (500 - 5);
         if (Number.isFinite(m)) {
             // equation: https://www.geeksforgeeks.org/find-points-at-a-given-distance-on-a-line-of-given-slope/
-            edge.controlX = midHeadTail.x + distanceFromControlToMid * Math.sqrt(1 / (1 + m * m));
-            edge.controlY = midHeadTail.y + m * distanceFromControlToMid * Math.sqrt(1 / (1 + m * m));
+            edge.control.x = edge.midBase().x + controlDistanceFromMid * Math.sqrt(1 / (1 + m * m));
+            edge.control.y = edge.midBase().y + m * controlDistanceFromMid * Math.sqrt(1 / (1 + m * m));
         } else {
-            edge.controlX = midHeadTail.x;
-            edge.controlY = midHeadTail.y + distanceFromControlToMid;
+            edge.control.x = edge.midBase().x;
+            edge.control.y = edge.midBase().y + controlDistanceFromMid;
         }
-        // ** TEMP
-        // const control = { x: edge.controlX, y: edge.controlY };
-        // const vertex = { x: (control.x + midHeadTail.x) / 2, y: (control.y + midHeadTail.y) / 2 };
-        // drawCircle(vertex.x, vertex.y, 3);
-        // drawLine(control, tail, 'red');
-        // drawLine(vertex, tail, 'red');
-        // const slope = (control.y - tail.y) / (control.x - tail.x);
-        // const x0 = tail.x + this.radius * Math.sqrt(1 / (1 + slope * slope));
-        // const y0 = tail.y + slope * this.radius * Math.sqrt(1 / (1 + slope * slope));
-        // const p0 = { x: x0, y: y0 };
-        // const x1 = tail.x - this.radius * Math.sqrt(1 / (1 + slope * slope));
-        // const y1 = tail.y - slope * this.radius * Math.sqrt(1 / (1 + slope * slope));
-        // const p1 = { x: x1, y: y1 };
-        // const intersect = distanceBetween(control, p0) < distanceBetween(control, p1) ? p0 : p1;
-        // drawCircle(intersect.x, intersect.y, 5, 'red');
-        // **
+        edge.setArrowhead();
     }
 
     slideControl(x, y) {
-        const head = { x: this.x, y: this.y };
-        const tail = this.outEdge.tail;
-        // f is a linear function that is perpendicular to the line between the head and tail.
-        // The control point must travel along f.
+        const edge = this.outEdge;
+        const head = edge.head;
+        const tail = edge.tail;
+        // The control point must travel along the axis of symmetry.
         const f = function(x, inverse = false) {
-            return perpendicularFunction(x, head, tail, inverse);
+            return edge.axisOfSymmetry(x, inverse);
         };
-        const midHeadTail = { x: (head.x + tail.x) / 2, y: (head.y + tail.y) / 2 };
-        const fIsVertical = Math.abs(head.y - tail.y) < Math.abs(head.x - tail.x);
-        this.outEdge.controlX = fIsVertical ? f(y, true) : x;
-        this.outEdge.controlY = fIsVertical ? y : f(x);
-        this.outEdge.controlDistanceFromMid = Math.hypot(this.outEdge.controlX - midHeadTail.x, this.outEdge.controlY - midHeadTail.y);
-        if (head.y < tail.y || (head.y === tail.y && head.x > tail.x)) {
-            this.outEdge.controlIsForward = this.outEdge.controlX >= midHeadTail.x;
+        const slope = (f(500) - f(5)) / (500 - 5);
+        const newVertex = {};
+        newVertex.x = edge.isVerticalParabola() ? f(y, true) : x;
+        newVertex.y = edge.isVerticalParabola() ? y : f(x);
+        const midBase = edge.midBase();
+        const newHeight = distanceBetween(newVertex, midBase);
+        const maybeControl1 = ptAlongSlope(midBase, slope, newHeight * 2);
+        const maybeControl2 = ptAlongSlope(midBase, slope, newHeight * -2);
+        if (distanceBetween(maybeControl1, newVertex) < distanceBetween(maybeControl2, newVertex)) {
+            edge.setControl(maybeControl1);
         } else {
-            this.outEdge.controlIsForward = this.outEdge.controlX <= midHeadTail.x;
+            edge.setControl(maybeControl2);
         }
+        edge.controlDistanceFromMid = distanceBetween(edge.control, midBase);
+        if (head.y < tail.y || (head.y === tail.y && head.x > tail.x)) {
+            edge.controlIsForward = edge.control.x >= midBase.x;
+        } else {
+            edge.controlIsForward = edge.control.x <= midBase.x;
+        }
+        edge.setArrowhead();
     }
 
     contains(x, y) {
@@ -163,45 +222,22 @@ class Circle {
         return distance <= this.radius;
     }
 
-    controlContains(x, y) {
+    outEdgeVertexContains(x, y) {
         if (this.outEdge == null) {
             return;
         }
-        const control = { x: this.outEdge.controlX, y: this.outEdge.controlY };
-        const inX = x >= control.x - 5 && x <= control.x + 5;
-        const inY = y >= control.y - 5 && y <= control.y + 5;
-        return inX && inY;
+        return this.outEdge.vertexContains(x, y);
     }
 
     edgeContains(x, y) {
-        const [x0, y0] = [this.x, this.y];
-        const [x1, y1] = [this.outEdge.controlX, this.outEdge.controlY];
-        const [x2, y2] = [this.outEdge.tail.x, this.outEdge.tail.y];
-        const headTailDistance = Math.hypot(x0 - x2, y0 - y2);
-        const max = Math.round(((headTailDistance + this.outEdge.controlDistanceFromMid) / 100) * 100) / 10;
-        for (let n = 0; n <= max; n++) {
-            const t = n / max;
-            // quadratic bezier equation
-            const xt = x1 + (1 - t) * (1 - t) * (x0 - x1) + t * t * (x2 - x1);
-            const yt = y1 + (1 - t) * (1 - t) * (y0 - y1) + t * t * (y2 - y1);
-            const inX = x >= xt - 5 && x <= xt + 5;
-            const inY = y >= yt - 5 && y <= yt + 5;
-            if (inX && inY) {
-                drawCircle(xt, yt, 5, 'green');
-                break;
-            }
-        }
-        // this.inverseBezierFunction(x, y);
-        // Inverse Quadratic Bezier (using the quadratic equation)
+        return this.outEdge.contains(x, y);
     }
 
-    makeOutEdgeTo(circle, controlX = null, controlY = null) {
-        controlX = controlX || (this.x + circle.x) / 2;
-        controlY = controlY || (this.y + circle.y) / 2;
-        const controlDistanceFromMid = 0;
-        const controlIsForward = false;
-        this.outEdge = { head: this, tail: circle, controlX, controlY, controlDistanceFromMid, controlIsForward };
-        circle.inEdge = this.outEdge;
+    makeOutEdgeTo(tail) {
+        const control = { x: (this.x + tail.x) / 2, y: (this.y + tail.y) / 2 };
+        this.outEdge = new Edge(this, tail, control);
+        tail.inEdge = this.outEdge;
+        this.outEdge.setArrowhead();
     }
 }
 
@@ -225,12 +261,13 @@ canvas.addEventListener('mousedown', function(event) {
     for (let i = 0; i < circles.length; i++) {
         if (circles[i].contains(x, y)) {
             indexOfVertexToDrag = i;
-        } else if (circles[i].controlContains(x, y)) {
+        } else if (circles[i].outEdgeVertexContains(x, y)) {
             indexOfControlToDrag = i;
+            console.log('vertex selected');
         }
-        if (circles[i].outEdge) {
-            circles[i].edgeContains(x, y);
-        }
+        // if (circles[i].outEdge) {
+        //     circles[i].edgeContains(x, y);
+        // }
     }
 });
 
@@ -298,18 +335,29 @@ function drawQuadraticCurve(beginX, beginY, contX, contY, endX, endY, colour = '
 }
 
 function perpendicularFunction(x, p0, p1, inverse = false) {
-    const [x0, x1] = p0.x < p1.x ? [p0.x, p1.x] : [p1.x, p0.x]; // maybe remove
-    const [y0, y1] = p0.x < p1.x ? [p0.y, p1.y] : [p1.y, p0.y]; // maybe remove
-    const slope = (x0 - x1) / (y1 - y0);
-    const [xmid, ymid] = [(x0 + x1) / 2, (y0 + y1) / 2];
+    const slope = (p0.x - p1.x) / (p1.y - p0.y);
+    const mid = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 };
     if (inverse) {
-        return (x - ymid) / slope + xmid;
+        return (x - mid.y) / slope + mid.x;
     }
-    return slope * (x - xmid) + ymid;
+    return slope * (x - mid.x) + mid.y;
 }
 
 function distanceBetween(p1, p2) {
     return Math.hypot(p2.x - p1.x, p2.y - p1.y);
+}
+
+function ptAlongSlope(startPt, slope, distance) {
+    if (Number.isFinite(slope) === false) {
+        const x = startPt.x;
+        const y = startPt.y + distance;
+        return { x, y };
+    }
+    // src: https://www.geeksforgeeks.org/find-points-at-a-given-distance-on-a-line-of-given-slope/
+    const m = slope;
+    const x = startPt.x + distance * Math.sqrt(1 / (1 + m * m));
+    const y = startPt.y + m * distance * Math.sqrt(1 / (1 + m * m));
+    return { x, y };
 }
 
 function pointBetween(p1, p2) {
