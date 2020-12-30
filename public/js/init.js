@@ -21,6 +21,7 @@ class Edge {
         this.control = control;
         this.controlDistanceFromMid = 0;
         this.controlIsForward = false;
+        this.setArrowhead();
     }
 
     draw() {
@@ -122,13 +123,60 @@ class Edge {
         return slope * (x - mid.x) + mid.y;
     }
 
-    isVerticalParabola() {
-        return Math.abs(this.head.y - this.tail.y) < Math.abs(this.head.x - this.tail.x);
+    axisOfSymmetrySlope() {
+        const rise = this.axisOfSymmetry(500) - this.axisOfSymmetry(5);
+        const run = 500 - 5;
+        return rise / run;
     }
 
     vertexContains(x, y) {
         const distance = distanceBetween(this.vertex(), { x, y });
         return distance <= 5;
+    }
+
+    slideVertex(x, y) {
+        const head = this.head;
+        const tail = this.tail;
+        const slope = this.axisOfSymmetrySlope();
+        const newVertex = {};
+        newVertex.x = Math.abs(slope) < 1 ? x : this.axisOfSymmetry(y, true);
+        newVertex.y = Math.abs(slope) < 1 ? this.axisOfSymmetry(x) : y;
+        const midBase = this.midBase();
+        const newHeight = distanceBetween(newVertex, midBase);
+        const maybeControl1 = ptAlongSlope(midBase, slope, newHeight * 2);
+        const maybeControl2 = ptAlongSlope(midBase, slope, newHeight * -2);
+        if (distanceBetween(maybeControl1, newVertex) < distanceBetween(maybeControl2, newVertex)) {
+            this.setControl(maybeControl1);
+        } else {
+            this.setControl(maybeControl2);
+        }
+        this.controlDistanceFromMid = newHeight * 2;
+        if (head.y < tail.y || (head.y === tail.y && head.x > tail.x)) {
+            this.controlIsForward = this.control.x >= midBase.x;
+        } else {
+            this.controlIsForward = this.control.x <= midBase.x;
+        }
+        this.setArrowhead();
+    }
+
+    readjustEdgeForChangedEndpoint() {
+        const head = this.head;
+        const tail = this.tail;
+        let controlDistanceFromMid = this.controlDistanceFromMid;
+        if (this.controlIsForward && (head.y > tail.y || (head.y === tail.y && head.x < tail.x))) {
+            controlDistanceFromMid = -1 * controlDistanceFromMid;
+        } else if (!this.controlIsForward && (head.y < tail.y || (head.y === tail.y && head.x > tail.x))) {
+            controlDistanceFromMid = -1 * controlDistanceFromMid;
+        }
+        const midBase = this.midBase();
+        const m = this.axisOfSymmetrySlope();
+        if (Number.isFinite(m)) {
+            const newControl = ptAlongSlope(midBase, m, controlDistanceFromMid);
+            this.setControl(newControl);
+        } else {
+            this.setControl(midBase.x, midBase.y + controlDistanceFromMid);
+        }
+        this.setArrowhead();
     }
 }
 
@@ -156,65 +204,14 @@ class Circle {
     setCenter(x, y) {
         this.x = x;
         this.y = y;
-        this.adjustEdge();
-    }
-
-    adjustEdge() {
         const edge = this.outEdge || this.inEdge;
-        if (edge == null) {
-            return;
+        if (edge !== null) {
+            edge.readjustEdgeForChangedEndpoint();
         }
-        const head = edge.head;
-        const tail = edge.tail;
-        const f = function(x, inverse = false) {
-            return edge.axisOfSymmetry(x, inverse);
-        };
-        let controlDistanceFromMid = edge.controlDistanceFromMid;
-        if (edge.controlIsForward && (head.y > tail.y || (head.y === tail.y && head.x < tail.x))) {
-            controlDistanceFromMid = -1 * controlDistanceFromMid;
-        } else if (!edge.controlIsForward && (head.y < tail.y || (head.y === tail.y && head.x > tail.x))) {
-            controlDistanceFromMid = -1 * controlDistanceFromMid;
-        }
-        const m = (f(500) - f(5)) / (500 - 5);
-        if (Number.isFinite(m)) {
-            // equation: https://www.geeksforgeeks.org/find-points-at-a-given-distance-on-a-line-of-given-slope/
-            edge.control.x = edge.midBase().x + controlDistanceFromMid * Math.sqrt(1 / (1 + m * m));
-            edge.control.y = edge.midBase().y + m * controlDistanceFromMid * Math.sqrt(1 / (1 + m * m));
-        } else {
-            edge.control.x = edge.midBase().x;
-            edge.control.y = edge.midBase().y + controlDistanceFromMid;
-        }
-        edge.setArrowhead();
     }
 
-    slideControl(x, y) {
-        const edge = this.outEdge;
-        const head = edge.head;
-        const tail = edge.tail;
-        // The control point must travel along the axis of symmetry.
-        const f = function(x, inverse = false) {
-            return edge.axisOfSymmetry(x, inverse);
-        };
-        const slope = (f(500) - f(5)) / (500 - 5);
-        const newVertex = {};
-        newVertex.x = edge.isVerticalParabola() ? f(y, true) : x;
-        newVertex.y = edge.isVerticalParabola() ? y : f(x);
-        const midBase = edge.midBase();
-        const newHeight = distanceBetween(newVertex, midBase);
-        const maybeControl1 = ptAlongSlope(midBase, slope, newHeight * 2);
-        const maybeControl2 = ptAlongSlope(midBase, slope, newHeight * -2);
-        if (distanceBetween(maybeControl1, newVertex) < distanceBetween(maybeControl2, newVertex)) {
-            edge.setControl(maybeControl1);
-        } else {
-            edge.setControl(maybeControl2);
-        }
-        edge.controlDistanceFromMid = distanceBetween(edge.control, midBase);
-        if (head.y < tail.y || (head.y === tail.y && head.x > tail.x)) {
-            edge.controlIsForward = edge.control.x >= midBase.x;
-        } else {
-            edge.controlIsForward = edge.control.x <= midBase.x;
-        }
-        edge.setArrowhead();
+    slideOutEdgeVertex(x, y) {
+        this.outEdge.slideVertex(x, y);
     }
 
     contains(x, y) {
@@ -237,7 +234,6 @@ class Circle {
         const control = { x: (this.x + tail.x) / 2, y: (this.y + tail.y) / 2 };
         this.outEdge = new Edge(this, tail, control);
         tail.inEdge = this.outEdge;
-        this.outEdge.setArrowhead();
     }
 }
 
@@ -263,7 +259,6 @@ canvas.addEventListener('mousedown', function(event) {
             indexOfVertexToDrag = i;
         } else if (circles[i].outEdgeVertexContains(x, y)) {
             indexOfControlToDrag = i;
-            console.log('vertex selected');
         }
         // if (circles[i].outEdge) {
         //     circles[i].edgeContains(x, y);
@@ -286,7 +281,7 @@ canvas.addEventListener('mousemove', function(event) {
         circles[indexOfVertexToDrag].setCenter(x, y);
     }
     if (indexOfControlToDrag !== null) {
-        circles[indexOfControlToDrag].slideControl(x, y);
+        circles[indexOfControlToDrag].slideOutEdgeVertex(x, y);
     }
     // draw all vertices
     for (let i = 0; i < circles.length; i++) {
