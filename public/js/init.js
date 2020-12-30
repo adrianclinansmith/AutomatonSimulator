@@ -20,7 +20,7 @@ class Edge {
         this.tail = tail;
         this.control = control;
         this.controlDistanceFromMid = 0;
-        this.controlIsForward = false;
+        this.controlIsForward = true;
         this.setArrowhead();
     }
 
@@ -151,15 +151,19 @@ class Edge {
             this.setControl(maybeControl2);
         }
         this.controlDistanceFromMid = newHeight * 2;
-        if (head.y < tail.y || (head.y === tail.y && head.x > tail.x)) {
+        if (head.y < tail.y) {
             this.controlIsForward = this.control.x >= midBase.x;
+        } else if (head.y === tail.y && head.x > tail.x) {
+            this.controlIsForward = this.control.y >= midBase.y;
+        } else if (head.y === tail.y && head.x < tail.x) {
+            this.controlIsForward = this.control.y < midBase.y;
         } else {
             this.controlIsForward = this.control.x <= midBase.x;
         }
         this.setArrowhead();
     }
 
-    readjustEdgeForChangedEndpoint() {
+    readjustForChangedEndpoint() {
         const head = this.head;
         const tail = this.tail;
         let controlDistanceFromMid = this.controlDistanceFromMid;
@@ -174,19 +178,20 @@ class Edge {
             const newControl = ptAlongSlope(midBase, m, controlDistanceFromMid);
             this.setControl(newControl);
         } else {
-            this.setControl(midBase.x, midBase.y + controlDistanceFromMid);
+            const newControl = { x: midBase.x, y: midBase.y + controlDistanceFromMid };
+            this.setControl(newControl);
         }
         this.setArrowhead();
     }
 }
 
-class Circle {
+class State {
     constructor(x, y, radius, colour = 'black') {
         this.x = x;
         this.y = y;
         this.radius = radius;
-        this.outEdge = null;
-        this.inEdge = null;
+        this.outEdges = [];
+        this.inEdges = [];
         this.colour = colour;
     }
 
@@ -194,24 +199,25 @@ class Circle {
         drawCircle(this.x, this.y, 30, this.colour);
     }
 
-    drawOutEdge() {
-        if (this.outEdge === null) {
-            return;
+    drawOutEdges() {
+        for (let i = 0; i < this.outEdges.length; i++) {
+            this.outEdges[i].draw();
         }
-        this.outEdge.draw();
     }
 
     setCenter(x, y) {
         this.x = x;
         this.y = y;
-        const edge = this.outEdge || this.inEdge;
-        if (edge !== null) {
-            edge.readjustEdgeForChangedEndpoint();
+        for (let i = 0; i < this.outEdges.length; i++) {
+            this.outEdges[i].readjustForChangedEndpoint();
+        }
+        for (let i = 0; i < this.inEdges.length; i++) {
+            this.inEdges[i].readjustForChangedEndpoint();
         }
     }
 
-    slideOutEdgeVertex(x, y) {
-        this.outEdge.slideVertex(x, y);
+    slideOutEdgeVertex(x, y, index) {
+        this.outEdges[index].slideVertex(x, y);
     }
 
     contains(x, y) {
@@ -220,10 +226,12 @@ class Circle {
     }
 
     outEdgeVertexContains(x, y) {
-        if (this.outEdge == null) {
-            return;
+        for (let i = 0; i < this.outEdges.length; i++) {
+            if (this.outEdges[i].vertexContains(x, y)) {
+                return i;
+            }
         }
-        return this.outEdge.vertexContains(x, y);
+        return null;
     }
 
     edgeContains(x, y) {
@@ -232,33 +240,49 @@ class Circle {
 
     makeOutEdgeTo(tail) {
         const control = { x: (this.x + tail.x) / 2, y: (this.y + tail.y) / 2 };
-        this.outEdge = new Edge(this, tail, control);
-        tail.inEdge = this.outEdge;
+        const newEdge = new Edge(this, tail, control);
+        this.outEdges.push(newEdge);
+        tail.inEdges.push(newEdge);
     }
 }
 
+// ********************************
 // TEST
+// ********************************
 
-const circles = [new Circle(370, 86, 30), new Circle(228, 280, 30, 'blue')];
+const rad = 30;
+const circles = [new State(150, 200, rad), new State(250, 200, rad), new State(150, 300, rad),
+    new State(450, 200, rad), new State(250, 300, rad)];
+
 circles[0].makeOutEdgeTo(circles[1]);
-circles[0].drawOutEdge();
-circles[0].draw();
-circles[1].draw();
+circles[0].makeOutEdgeTo(circles[2]);
+circles[1].makeOutEdgeTo(circles[3]);
+circles[0].makeOutEdgeTo(circles[4]);
+circles[1].makeOutEdgeTo(circles[4]);
+circles[2].makeOutEdgeTo(circles[4]);
+
+for (let i = 0; i < circles.length; i++) {
+    circles[i].drawOutEdges();
+}
+for (let i = 0; i < circles.length; i++) {
+    circles[i].draw();
+}
 
 // ********************************
 // Event Listeners
 // ********************************
 
-let indexOfVertexToDrag = null;
-let indexOfControlToDrag = null;
+let indexOfStateToDrag = null;
+let indexOfStateAndEdgeToDrag = null;
 
 canvas.addEventListener('mousedown', function(event) {
     const { x, y } = eventPointInCanvas(event);
+    let j = null;
     for (let i = 0; i < circles.length; i++) {
         if (circles[i].contains(x, y)) {
-            indexOfVertexToDrag = i;
-        } else if (circles[i].outEdgeVertexContains(x, y)) {
-            indexOfControlToDrag = i;
+            indexOfStateToDrag = i;
+        } else if ((j = circles[i].outEdgeVertexContains(x, y)) !== null) {
+            indexOfStateAndEdgeToDrag = { stateIndex: i, edgeIndex: j };
         }
         // if (circles[i].outEdge) {
         //     circles[i].edgeContains(x, y);
@@ -267,25 +291,27 @@ canvas.addEventListener('mousedown', function(event) {
 });
 
 canvas.addEventListener('mouseup', function(event) {
-    indexOfVertexToDrag = null;
-    indexOfControlToDrag = null;
+    indexOfStateToDrag = null;
+    indexOfStateAndEdgeToDrag = null;
 });
 
 canvas.addEventListener('mousemove', function(event) {
-    if (indexOfVertexToDrag === null && indexOfControlToDrag === null) {
+    if (indexOfStateToDrag === null && indexOfStateAndEdgeToDrag === null) {
         return;
     }
     context.clearRect(0, 0, canvas.width, canvas.height);
     const { x, y } = eventPointInCanvas(event);
-    if (indexOfVertexToDrag !== null) {
-        circles[indexOfVertexToDrag].setCenter(x, y);
+    if (indexOfStateToDrag !== null) {
+        circles[indexOfStateToDrag].setCenter(x, y);
     }
-    if (indexOfControlToDrag !== null) {
-        circles[indexOfControlToDrag].slideOutEdgeVertex(x, y);
+    if (indexOfStateAndEdgeToDrag !== null) {
+        const stateIndex = indexOfStateAndEdgeToDrag.stateIndex;
+        const edgeIndex = indexOfStateAndEdgeToDrag.edgeIndex;
+        circles[stateIndex].slideOutEdgeVertex(x, y, edgeIndex);
     }
     // draw all vertices
     for (let i = 0; i < circles.length; i++) {
-        circles[i].drawOutEdge();
+        circles[i].drawOutEdges();
     }
     // draw all edges
     for (let i = 0; i < circles.length; i++) {
