@@ -20,6 +20,14 @@ class Pt {
         return (otherPt.y - this.y) / (otherPt.x - this.x);
     }
 
+    addPt(addendPt) {
+        return new Pt(this.x + addendPt.x, this.y + addendPt.y);
+    }
+
+    minusPt(subtrahendPt) {
+        return new Pt(this.x - subtrahendPt.x, this.y - subtrahendPt.y);
+    }
+
     ptAlongSlope(slope, distance) {
         if (Number.isFinite(slope) === false) {
             return new Pt(this.x, this.y + distance);

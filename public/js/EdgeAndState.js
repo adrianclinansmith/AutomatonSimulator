@@ -116,27 +116,6 @@ class Edge {
         const distance = this.vertex().distanceTo(new Pt(x, y));
         return distance <= 5;
     }
-
-    // readjustForChangedEndpoint() {
-    //     const head = this.head;
-    //     const tail = this.tail;
-    //     let controlDistanceFromMid = this.controlDistanceFromMid;
-    //     if (this.controlIsForward && (head.y > tail.y || (head.y === tail.y && head.x < tail.x))) {
-    //         controlDistanceFromMid = -1 * controlDistanceFromMid;
-    //     } else if (!this.controlIsForward && (head.y < tail.y || (head.y === tail.y && head.x > tail.x))) {
-    //         controlDistanceFromMid = -1 * controlDistanceFromMid;
-    //     }
-    //     const midBase = this.midBase();
-    //     const m = this.axisOfSymmetrySlope();
-    //     if (Number.isFinite(m)) {
-    //         const newControl = midBase.ptAlongSlope(m, controlDistanceFromMid);
-    //         this.setControl(newControl);
-    //     } else {
-    //         const newControl = { x: midBase.x, y: midBase.y + controlDistanceFromMid };
-    //         this.setControl(newControl);
-    //     }
-    //     this.setArrowhead();
-    // }
 }
 
 // ********************************************************
@@ -224,6 +203,7 @@ class LoopEdge extends Edge {
             this.control = control;
         }
         this.setArrowhead();
+        this.setOffset();
     }
 
     slideVertex(x, y) {
@@ -249,10 +229,22 @@ class LoopEdge extends Edge {
             this.endPt = state.ptAlongSlope(slope, -1 * state.radius / 2);
         }
         this.setArrowhead();
+        this.setOffset();
     }
 
     readjustForChangedEndpoint() {
-        console.log('must implement');
+        this.startPt = this.head.addPt(this.stateOffset.startPt);
+        this.endPt = this.head.addPt(this.stateOffset.endPt);
+        this.control = this.head.addPt(this.stateOffset.control);
+        this.setArrowhead();
+    }
+
+    setOffset() {
+        const stateOffset = {};
+        stateOffset.startPt = this.startPt.minusPt(this.head);
+        stateOffset.endPt = this.endPt.minusPt(this.head);
+        stateOffset.control = this.control.minusPt(this.head);
+        this.stateOffset = stateOffset;
     }
 }
 
