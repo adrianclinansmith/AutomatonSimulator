@@ -5,6 +5,34 @@ body {
     text-align: center;
 }
 
+div {
+    background-color: pink; 
+    width: 700; 
+    height: 500;
+    position: relative;
+    margin: 0 auto;
+}
+
 canvas {
     background-color: #ebe9e9;
+    position: relative;
+    z-index: 1;
+}
+
+/* 
+disable pointer-events: https://stackoverflow.com/questions/7700051 
+adjust text input width: https://stackoverflow.com/questions/3392493
+*/
+
+.EdgeLabel {
+    background-color: transparent; 
+    border: none;
+    font-size: 15px;
+    z-index: 2; 
+    position: absolute;  
+    left: 10px; 
+    top: 10px;
+    font-family: Monaco, monospace;
+    width: 2ch;
+    pointer-events: none;
 }

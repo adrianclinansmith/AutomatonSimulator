@@ -73,13 +73,43 @@ class Canvas {
         this.context.stroke();
     }
 
-    drawLine(p0, p1, colour = 'black') {
+    drawLine(pt0, pt1, colour = 'black') {
         this.context.beginPath();
-        this.context.moveTo(p0.x, p0.y);
-        const p2 = new Pt((p0.x + p1.x) / 2, (p0.y + p1.y) / 2);
-        this.context.quadraticCurveTo(p2.x, p2.y, p1.x, p1.y);
+        this.context.moveTo(pt0.x, pt0.y);
+        const p2 = new Pt((pt0.x + pt1.x) / 2, (pt0.y + pt1.y) / 2);
+        this.context.quadraticCurveTo(p2.x, p2.y, pt1.x, pt1.y);
         this.context.strokeStyle = colour;
         this.context.stroke();
+    }
+
+    drawQuadraticCurve(beginPt, controlPt, endPt, colour = 'black') {
+        this.context.beginPath();
+        this.context.moveTo(beginPt.x, beginPt.y);
+        this.context.quadraticCurveTo(controlPt.x, controlPt.y, endPt.x, endPt.y);
+        this.context.strokeStyle = colour;
+        this.context.stroke();
+    }
+
+    drawText(text, atPt) {
+        this.context.fillStyle = 'black';
+        this.context.font = '30px serif';
+        this.context.textAlign = 'center';
+        this.context.fillText(text, atPt.x, atPt.y);
+
+        const width = this.context.measureText(text).width;
+        const p0 = new Pt(atPt.x - width / 2, atPt.y);
+        const p1 = new Pt(atPt.x + width / 2, atPt.y);
+        this.drawLine(p0, p1, 'green'); // bottom line
+        console.log('width: ' + width);
+        p1.x = p0.x;
+        p1.y = p0.y - width;
+        this.drawLine(p0, p1, 'green'); // left line
+        p0.x = p0.x + width;
+        p1.x = p1.x + width;
+        this.drawLine(p0, p1, 'green'); // right line
+        p0.x = p0.x - width;
+        p0.y = p1.y;
+        this.drawLine(p0, p1, 'green'); // top line
     }
 
     eventPointInCanvas(event) {
@@ -87,14 +117,6 @@ class Canvas {
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
         return new Pt(x, y);
-    }
-
-    drawQuadraticCurve(begin, control, end, colour = 'black') {
-        this.context.beginPath();
-        this.context.moveTo(begin.x, begin.y);
-        this.context.quadraticCurveTo(control.x, control.y, end.x, end.y);
-        this.context.strokeStyle = colour;
-        this.context.stroke();
     }
 
     clear() {

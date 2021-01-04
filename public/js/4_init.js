@@ -6,29 +6,21 @@
 console.log('Adrian Clinansmith');
 
 // ********************************
-// TEST
+// Initialize Graph
 // ********************************
 
 /* global State canvas */
 
 const rad = 30;
-const statesArray = [new State(150, 200, rad), new State(250, 200, rad), new State(150, 300, rad),
+const statesArray = [new State(150, 200, rad), new State(350, 200, rad), new State(150, 300, rad),
     new State(450, 200, rad), new State(250, 300, rad)];
-
 statesArray[0].makeOutEdgeTo(statesArray[1]);
 statesArray[0].makeOutEdgeTo(statesArray[2]);
 statesArray[1].makeOutEdgeTo(statesArray[3]);
 statesArray[0].makeOutEdgeTo(statesArray[4]);
 statesArray[4].makeOutEdgeTo(statesArray[1]);
 statesArray[2].makeOutEdgeTo(statesArray[4]);
-
 statesArray[0].makeOutEdgeTo(statesArray[0]);
-
-// const firstState = statesArray[0];
-// const start = { x: firstState.x - rad / 2, y: firstState.y };
-// const end = { x: firstState.x + rad / 2, y: firstState.y };
-// const control = { x: firstState.x, y: firstState.y - rad * 4 };
-// canvas.drawQuadraticCurve(start, control, end);
 
 for (let i = 0; i < statesArray.length; i++) {
     statesArray[i].drawOutEdges();
@@ -36,47 +28,51 @@ for (let i = 0; i < statesArray.length; i++) {
 for (let i = 0; i < statesArray.length; i++) {
     statesArray[i].draw();
 }
-
 // ********************************
 // Event Listeners
 // ********************************
 
-let indexOfStateToDrag = null;
-let indexOfStateAndEdgeToDrag = null;
+let stateToDrag = null;
+let edgeWithVertexToDrag = null;
+let edgeWithLabelToEdit = null;
 
 canvas.element.addEventListener('mousedown', function(event) {
     const { x, y } = canvas.eventPointInCanvas(event);
     let j = null;
     for (let i = 0; i < statesArray.length; i++) {
         if (statesArray[i].contains(x, y)) {
-            indexOfStateToDrag = i;
+            stateToDrag = statesArray[i];
+            return;
         } else if ((j = statesArray[i].outEdgeVertexContains(x, y)) !== null) {
-            indexOfStateAndEdgeToDrag = { stateIndex: i, edgeIndex: j };
+            edgeWithVertexToDrag = statesArray[i].outEdges[j];
+            return;
+        } else if ((j = statesArray[i].outEdgeLabelContains(x, y)) !== null) {
+            edgeWithLabelToEdit = statesArray[i].outEdges[j];
+            return;
         }
-        // if (circles[i].outEdge) {
-        //     circles[i].edgeContains(x, y);
-        // }
     }
 });
 
 canvas.element.addEventListener('mouseup', function(event) {
-    indexOfStateToDrag = null;
-    indexOfStateAndEdgeToDrag = null;
+    stateToDrag = null;
+    edgeWithVertexToDrag = null;
+    if (edgeWithLabelToEdit !== null) {
+        edgeWithLabelToEdit.label.textInput.focus();
+        edgeWithLabelToEdit = null;
+    }
 });
 
 canvas.element.addEventListener('mousemove', function(event) {
-    if (indexOfStateToDrag === null && indexOfStateAndEdgeToDrag === null) {
+    if (stateToDrag === null && edgeWithVertexToDrag === null) {
         return;
     }
     canvas.clear();
     const { x, y } = canvas.eventPointInCanvas(event);
-    if (indexOfStateToDrag !== null) {
-        statesArray[indexOfStateToDrag].setCenter(x, y);
+    if (stateToDrag !== null) {
+        stateToDrag.setCenter(x, y);
     }
-    if (indexOfStateAndEdgeToDrag !== null) {
-        const stateIndex = indexOfStateAndEdgeToDrag.stateIndex;
-        const edgeIndex = indexOfStateAndEdgeToDrag.edgeIndex;
-        statesArray[stateIndex].slideOutEdgeVertex(x, y, edgeIndex);
+    if (edgeWithVertexToDrag !== null) {
+        edgeWithVertexToDrag.slideVertex(x, y);
     }
     // draw all vertices
     for (let i = 0; i < statesArray.length; i++) {

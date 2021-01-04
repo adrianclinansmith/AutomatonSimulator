@@ -4,17 +4,28 @@
 // Edge Class
 // ********************************************************
 
+// eslint-disable-next-line no-unused-vars
 class Edge {
-    constructor(head, tail, control = null) {
+    constructor(head, tail, controlPt = null) {
         this.head = head;
         this.tail = tail;
     }
 
     draw() {
-        canvas.drawQuadraticCurve(this.startPt, this.control, this.endPt);
+        canvas.drawQuadraticCurve(this.startPt, this.controlPt, this.endPt);
         canvas.drawCircle(this.vertex(), 5, 'red');
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1);
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner2);
+        const labelLocation = this.bezier(this.label.bezierT);
+        const labelHeight = this.label.textInput.scrollHeight;
+        this.label.textInput.style.left = labelLocation.x;
+        this.label.textInput.style.top = labelLocation.y - labelHeight;
+        // TEMP
+        // const scrollWidth = this.label.textInput.scrollWidth;
+        // const p0 = new Pt(labelLocation.x, labelLocation.y);
+        // const p1 = new Pt(p0.x + scrollWidth, p0.y);
+        // canvas.drawLine(p0, p1, 'red');
+        this.labelContains(5, 5);
     }
 
     setArrowhead() {
@@ -47,24 +58,39 @@ class Edge {
         this.arrowhead = { tip, corner1, corner2 };
     }
 
-    setControl(pt) {
-        this.control.x = pt.x;
-        this.control.y = pt.y;
+    setLabel() {
+        const textInput = document.createElement('input');
+        textInput.setAttribute('type', 'text');
+        textInput.setAttribute('class', 'EdgeLabel');
+        textInput.oninput = function() {
+            const textWidth = textInput.value.length;
+            textInput.style.width = (textWidth + 1) + 'ch';
+        };
+        this.label = { textInput, bezierT: 0.5 };
+        document.getElementById('CanvasDiv').appendChild(textInput);
+        // TEMP
+        // const str = 'abcdefghijklmnop';
+        // const sub = str.substr(0, (Math.random() * 10 + 1));
+        // textInput.value = sub;
     }
 
     bezier(t) {
         const p0 = this.endPt;
-        const p1 = this.control;
+        const p1 = this.controlPt;
         const p2 = this.startPt;
         const x = p1.x + (1 - t) * (1 - t) * (p0.x - p1.x) + t * t * (p2.x - p1.x);
         const y = p1.y + (1 - t) * (1 - t) * (p0.y - p1.y) + t * t * (p2.y - p1.y);
         return new Pt(x, y);
     }
 
+    vertex() {
+        return this.bezier(0.5);
+    }
+
     // TEMP: will change
     contains(x, y) {
         const [x0, y0] = [this.head.x, this.head.y];
-        const [x1, y1] = [this.control.x, this.control.y];
+        const [x1, y1] = [this.controlPt.x, this.controlPt.y];
         const [x2, y2] = [this.tail.x, this.tail.y];
         const headTailDistance = Math.hypot(x0 - x2, y0 - y2);
         const max = Math.round(((headTailDistance + this.controlDistanceFromMid) / 100) * 100) / 10;
@@ -83,8 +109,87 @@ class Edge {
         return false;
     }
 
-    vertex() {
-        return this.bezier(0.5);
+    vertexContains(x, y) {
+        const distance = this.vertex().distanceTo(new Pt(x, y));
+        return distance <= 5;
+    }
+
+    labelContains(x, y) {
+        const bottomLeftPt = this.bezier(this.label.bezierT);
+        const width = this.label.textInput.scrollWidth;
+        const height = this.label.textInput.scrollHeight;
+        const topRightPt = new Pt(bottomLeftPt.x + width, bottomLeftPt.y - height);
+        return x > bottomLeftPt.x && x < topRightPt.x && y < bottomLeftPt.y && y > topRightPt.y;
+    }
+}
+
+// ********************************************************
+// Non-Loop Edge Class
+// ********************************************************
+
+// eslint-disable-next-line no-unused-vars
+class NonLoopEdge extends Edge {
+    constructor(head, tail, controlPt = null) {
+        super(head, tail);
+        this.startPt = head;
+        this.endPt = tail;
+        if (controlPt === null) {
+            this.controlPt = new Pt((head.x + tail.x) / 2, (head.y + tail.y) / 2);
+        } else {
+            this.controlPt = controlPt;
+        }
+        this.controlDistanceFromMid = 0;
+        this.controlIsForward = true;
+        this.setArrowhead();
+        this.setLabel();
+    }
+
+    slideVertex(x, y) {
+        const head = this.head;
+        const tail = this.tail;
+        const slope = this.axisOfSymmetrySlope();
+        const newVertex = new Pt();
+        newVertex.x = Math.abs(slope) < 1 ? x : this.axisOfSymmetry(y, true);
+        newVertex.y = Math.abs(slope) < 1 ? this.axisOfSymmetry(x) : y;
+        const midBase = this.midBase();
+        const newHeight = newVertex.distanceTo(midBase);
+        const maybeControl1 = midBase.ptAlongSlope(slope, newHeight * 2);
+        const maybeControl2 = midBase.ptAlongSlope(slope, newHeight * -2);
+        if (newVertex.distanceTo(maybeControl1) < newVertex.distanceTo(maybeControl2)) {
+            this.controlPt = maybeControl1;
+        } else {
+            this.controlPt = maybeControl2;
+        }
+        this.controlDistanceFromMid = newHeight * 2;
+        if (head.y < tail.y) {
+            this.controlIsForward = this.controlPt.x >= midBase.x;
+        } else if (head.y === tail.y && head.x > tail.x) {
+            this.controlIsForward = this.controlPt.y >= midBase.y;
+        } else if (head.y === tail.y && head.x < tail.x) {
+            this.controlIsForward = this.controlPt.y < midBase.y;
+        } else {
+            this.controlIsForward = this.controlPt.x <= midBase.x;
+        }
+        this.setArrowhead();
+    }
+
+    readjustForChangedEndpoint() {
+        const head = this.head;
+        const tail = this.tail;
+        let controlDistanceFromMid = this.controlDistanceFromMid;
+        if (this.controlIsForward && (head.y > tail.y || (head.y === tail.y && head.x < tail.x))) {
+            controlDistanceFromMid = -1 * controlDistanceFromMid;
+        } else if (!this.controlIsForward && (head.y < tail.y || (head.y === tail.y && head.x > tail.x))) {
+            controlDistanceFromMid = -1 * controlDistanceFromMid;
+        }
+        const midBase = this.midBase();
+        const m = this.axisOfSymmetrySlope();
+        if (Number.isFinite(m)) {
+            this.controlPt = midBase.ptAlongSlope(m, controlDistanceFromMid);
+        } else {
+            this.controlPt = new Pt(midBase.x, midBase.y + controlDistanceFromMid);
+        }
+        this.setArrowhead();
     }
 
     midBase() {
@@ -111,99 +216,26 @@ class Edge {
         const run = 500 - 5;
         return rise / run;
     }
-
-    vertexContains(x, y) {
-        const distance = this.vertex().distanceTo(new Pt(x, y));
-        return distance <= 5;
-    }
-}
-
-// ********************************************************
-// Non-Loop Edge Class
-// ********************************************************
-
-class NonLoopEdge extends Edge {
-    constructor(head, tail, control = null) {
-        super(head, tail);
-        this.startPt = head;
-        this.endPt = tail;
-        if (control === null) {
-            this.control = new Pt((head.x + tail.x) / 2, (head.y + tail.y) / 2);
-        } else {
-            this.control = control;
-        }
-        this.controlDistanceFromMid = 0;
-        this.controlIsForward = true;
-        this.setArrowhead();
-    }
-
-    slideVertex(x, y) {
-        const head = this.head;
-        const tail = this.tail;
-        const slope = this.axisOfSymmetrySlope();
-        const newVertex = new Pt();
-        newVertex.x = Math.abs(slope) < 1 ? x : this.axisOfSymmetry(y, true);
-        newVertex.y = Math.abs(slope) < 1 ? this.axisOfSymmetry(x) : y;
-        const midBase = this.midBase();
-        const newHeight = newVertex.distanceTo(midBase);
-        const maybeControl1 = midBase.ptAlongSlope(slope, newHeight * 2);
-        const maybeControl2 = midBase.ptAlongSlope(slope, newHeight * -2);
-        if (newVertex.distanceTo(maybeControl1) < newVertex.distanceTo(maybeControl2)) {
-            this.setControl(maybeControl1);
-        } else {
-            this.setControl(maybeControl2);
-        }
-        this.controlDistanceFromMid = newHeight * 2;
-        if (head.y < tail.y) {
-            this.controlIsForward = this.control.x >= midBase.x;
-        } else if (head.y === tail.y && head.x > tail.x) {
-            this.controlIsForward = this.control.y >= midBase.y;
-        } else if (head.y === tail.y && head.x < tail.x) {
-            this.controlIsForward = this.control.y < midBase.y;
-        } else {
-            this.controlIsForward = this.control.x <= midBase.x;
-        }
-        this.setArrowhead();
-    }
-
-    readjustForChangedEndpoint() {
-        const head = this.head;
-        const tail = this.tail;
-        let controlDistanceFromMid = this.controlDistanceFromMid;
-        if (this.controlIsForward && (head.y > tail.y || (head.y === tail.y && head.x < tail.x))) {
-            controlDistanceFromMid = -1 * controlDistanceFromMid;
-        } else if (!this.controlIsForward && (head.y < tail.y || (head.y === tail.y && head.x > tail.x))) {
-            controlDistanceFromMid = -1 * controlDistanceFromMid;
-        }
-        const midBase = this.midBase();
-        const m = this.axisOfSymmetrySlope();
-        if (Number.isFinite(m)) {
-            const newControl = midBase.ptAlongSlope(m, controlDistanceFromMid);
-            this.setControl(newControl);
-        } else {
-            const newControl = { x: midBase.x, y: midBase.y + controlDistanceFromMid };
-            this.setControl(newControl);
-        }
-        this.setArrowhead();
-    }
 }
 
 // ********************************************************
 // Loop Edge Class
 // ********************************************************
 
+// eslint-disable-next-line no-unused-vars
 class LoopEdge extends Edge {
-    constructor(state, control = null) {
+    constructor(state, controlPt = null) {
         super(state, state);
         this.startPt = new Pt(state.x - state.radius / 2, state.y);
         this.endPt = new Pt(state.x + state.radius / 2, state.y);
-        if (control === null) {
-            this.control = new Pt(state.x, state.y - state.radius * 4);
+        if (controlPt === null) {
+            this.controlPt = new Pt(state.x, state.y - state.radius * 4);
         } else {
-            this.control = control;
+            this.controlPt = controlPt;
         }
         this.setArrowhead();
         this.setOffset();
+        this.setLabel();
     }
 
     slideVertex(x, y) {
@@ -214,9 +246,9 @@ class LoopEdge extends Edge {
         const maybeControl1 = newVertex.ptAlongSlope(m, -1 * distance);
         const maybeControl2 = newVertex.ptAlongSlope(m, distance);
         if (state.distanceTo(maybeControl1) > state.distanceTo(maybeControl2)) {
-            this.control = maybeControl1;
+            this.controlPt = maybeControl1;
         } else {
-            this.control = maybeControl2;
+            this.controlPt = maybeControl2;
         }
         const p0 = new Pt(5, newVertex.perpendicularFunction(5, state));
         const p1 = new Pt(50, newVertex.perpendicularFunction(50, state));
@@ -235,84 +267,14 @@ class LoopEdge extends Edge {
     readjustForChangedEndpoint() {
         this.startPt = this.head.addPt(this.stateOffset.startPt);
         this.endPt = this.head.addPt(this.stateOffset.endPt);
-        this.control = this.head.addPt(this.stateOffset.control);
+        this.controlPt = this.head.addPt(this.stateOffset.controlPt);
         this.setArrowhead();
     }
 
     setOffset() {
-        const stateOffset = {};
-        stateOffset.startPt = this.startPt.minusPt(this.head);
-        stateOffset.endPt = this.endPt.minusPt(this.head);
-        stateOffset.control = this.control.minusPt(this.head);
-        this.stateOffset = stateOffset;
-    }
-}
-
-// ********************************************************
-// State Class
-// ********************************************************
-
-// eslint-disable-next-line no-unused-vars
-class State extends Pt {
-    constructor(x, y, radius, colour = 'black') {
-        super(x, y);
-        this.radius = radius;
-        this.outEdges = [];
-        this.inEdges = [];
-        this.colour = colour;
-    }
-
-    draw() {
-        canvas.drawCircle(this, this.radius, this.colour);
-    }
-
-    drawOutEdges() {
-        for (let i = 0; i < this.outEdges.length; i++) {
-            this.outEdges[i].draw();
-        }
-    }
-
-    setCenter(x, y) {
-        this.x = x;
-        this.y = y;
-        for (let i = 0; i < this.outEdges.length; i++) {
-            this.outEdges[i].readjustForChangedEndpoint();
-        }
-        for (let i = 0; i < this.inEdges.length; i++) {
-            this.inEdges[i].readjustForChangedEndpoint();
-        }
-    }
-
-    slideOutEdgeVertex(x, y, index) {
-        this.outEdges[index].slideVertex(x, y);
-    }
-
-    contains(x, y) {
-        const distance = this.distanceTo({ x, y });
-        return distance <= this.radius;
-    }
-
-    outEdgeVertexContains(x, y) {
-        for (let i = 0; i < this.outEdges.length; i++) {
-            if (this.outEdges[i].vertexContains(x, y)) {
-                return i;
-            }
-        }
-        return null;
-    }
-
-    edgeContains(x, y) {
-        return this.outEdge.contains(x, y);
-    }
-
-    makeOutEdgeTo(tail) {
-        let newEdge;
-        if (tail !== this) {
-            newEdge = new NonLoopEdge(this, tail);
-        } else {
-            newEdge = new LoopEdge(this);
-        }
-        this.outEdges.push(newEdge);
-        tail.inEdges.push(newEdge);
+        const startPt = this.startPt.minusPt(this.head);
+        const endPt = this.endPt.minusPt(this.head);
+        const controlPt = this.controlPt.minusPt(this.head);
+        this.stateOffset = { startPt, endPt, controlPt };
     }
 }
