@@ -25,9 +25,10 @@ adjust text input width: https://stackoverflow.com/questions/3392493
 */
 
 .EdgeLabel {
-    background-color: transparent; 
+    background-color: pink; 
     border: none;
     font-size: 15px;
+    text-align: center;
     z-index: 2; 
     position: absolute;  
     left: 10px; 

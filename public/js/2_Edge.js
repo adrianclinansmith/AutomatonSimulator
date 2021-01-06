@@ -4,6 +4,12 @@
 // Edge Class
 // ********************************************************
 
+const anchor = {
+    BOTTOMLEFT: 0,
+    BOTTOMRIGHT: 1,
+    BOTTOMMIDDLE: 2
+};
+
 // eslint-disable-next-line no-unused-vars
 class Edge {
     constructor(head, tail, controlPt = null) {
@@ -16,16 +22,6 @@ class Edge {
         canvas.drawCircle(this.vertex(), 5, 'red');
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1);
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner2);
-        const labelLocation = this.bezier(this.label.bezierT);
-        const labelHeight = this.label.textInput.scrollHeight;
-        this.label.textInput.style.left = labelLocation.x;
-        this.label.textInput.style.top = labelLocation.y - labelHeight;
-        // TEMP
-        // const scrollWidth = this.label.textInput.scrollWidth;
-        // const p0 = new Pt(labelLocation.x, labelLocation.y);
-        // const p1 = new Pt(p0.x + scrollWidth, p0.y);
-        // canvas.drawLine(p0, p1, 'red');
-        this.labelContains(5, 5);
     }
 
     setArrowhead() {
@@ -58,7 +54,7 @@ class Edge {
         this.arrowhead = { tip, corner1, corner2 };
     }
 
-    setLabel() {
+    setupLabel() {
         const textInput = document.createElement('input');
         textInput.setAttribute('type', 'text');
         textInput.setAttribute('class', 'EdgeLabel');
@@ -66,12 +62,78 @@ class Edge {
             const textWidth = textInput.value.length;
             textInput.style.width = (textWidth + 1) + 'ch';
         };
-        this.label = { textInput, bezierT: 0.5 };
         document.getElementById('CanvasDiv').appendChild(textInput);
-        // TEMP
-        // const str = 'abcdefghijklmnop';
-        // const sub = str.substr(0, (Math.random() * 10 + 1));
-        // textInput.value = sub;
+        this.label = { textInput, bezierT: 0.5 };
+        this.readjustLabel();
+    }
+
+    readjustLabel(labelAnchor = anchor.BOTTOMMIDDLE) {
+        const t = this.label.bezierT;
+        const location = this.bezier(t);
+        const labelHeight = this.label.textInput.scrollHeight;
+        const labelWidth = this.label.textInput.scrollWidth;
+        const deriv = this.bezierDerivative(t);
+        console.log(`deriv: (${deriv.x}, ${deriv.y})`);
+        // bottom middle
+        if (Math.abs(deriv.y) < 15) {
+            this.label.textInput.style.top = location.y - labelHeight;
+            this.label.textInput.style.left = location.x - labelWidth / 2;
+        // bottom left
+        } else if (deriv.x * deriv.y > 0) {
+            this.label.textInput.style.top = location.y - labelHeight;
+            this.label.textInput.style.left = location.x;
+        // bottom right
+        } else {
+            this.label.textInput.style.top = location.y - labelHeight;
+            this.label.textInput.style.left = location.x - labelWidth;
+        }
+    }
+
+    labelContains(x, y) {
+        const textInput = this.label.textInput;
+        const width = textInput.scrollWidth;
+        const height = textInput.scrollHeight;
+        const left = Number(textInput.style.left.replace(/[^.\d]/g, ''));
+        const top = Number(textInput.style.top.replace(/[^.\d]/g, ''));
+        const topLeftPt = new Pt(left, top);
+        const bottomRightPt = new Pt(left + width, top + height);
+        return x > topLeftPt.x && x < bottomRightPt.x && y > topLeftPt.y && y < bottomRightPt.y;
+    }
+
+    slideLabel(x, y) {
+        const pt = new Pt(x, y);
+        let t = 0.5;
+        const distanceToEnd = pt.distanceTo(this.endPt);
+        const distanceToStart = pt.distanceTo(this.startPt);
+        // const distanceToVertex = pt.distanceTo(this.vertex());
+        let lastDistance = Infinity;
+        let incrementsArray;
+        if (distanceToEnd > distanceToStart) {
+            incrementsArray = [0.001, 0.005, 0.01, 0.05, 0.1];
+        } else {
+            incrementsArray = [-0.001, -0.005, -0.01, -0.05, -0.1];
+        }
+        let increment = incrementsArray.pop();
+        let ptOnCurve;
+        let counter = 0;
+        while (increment && t > 0 && t <= 1) {
+            counter += 1;
+            ptOnCurve = this.bezier(t);
+            const currentDistance = pt.distanceTo(ptOnCurve);
+            if (currentDistance < lastDistance) {
+                t += increment;
+                lastDistance = currentDistance;
+            } else {
+                t -= increment;
+                increment = incrementsArray.pop();
+                t += increment || 0;
+            }
+        }
+        console.log(`iterations: ${counter}`);
+        if (t > 0 && t <= 1) {
+            this.label.bezierT = t;
+            this.readjustLabel();
+        }
     }
 
     bezier(t) {
@@ -81,6 +143,39 @@ class Edge {
         const x = p1.x + (1 - t) * (1 - t) * (p0.x - p1.x) + t * t * (p2.x - p1.x);
         const y = p1.y + (1 - t) * (1 - t) * (p0.y - p1.y) + t * t * (p2.y - p1.y);
         return new Pt(x, y);
+    }
+
+    // TEMP: may not use
+    bezierInverse(pt, useX = true) {
+        const p0 = this.endPt;
+        const p1 = this.controlPt;
+        const p2 = this.startPt;
+        const a = p0.x - 2 * p1.x + p2.x;
+        const b = 2 * (p1.x - p0.x);
+        const c = (p0.x - pt.x);
+        let t1;
+        if (a === 0) {
+            t1 = (pt.x - p0.x) / (p2.x - p0.x);
+        } else {
+            t1 = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+        }
+        const t2 = (-b - Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+        return [t1, t2];
+    }
+
+    // TEMP: may not use
+    bezierDerivative(t) {
+        const p0 = this.endPt;
+        const p1 = this.controlPt;
+        const p2 = this.startPt;
+        const x = 2 * (1 - t) * (p1.x - p0.x) + 2 * t * (p2.x - p1.x);
+        const y = 2 * (1 - t) * (p1.y - p0.y) + 2 * t * (p2.y - p1.y);
+        return new Pt(x, y);
+    }
+
+    // TEMP: may not use
+    isValidBezierT(t) {
+        return t !== null && isFinite(t) && t >= 0 && t <= 1;
     }
 
     vertex() {
@@ -113,14 +208,6 @@ class Edge {
         const distance = this.vertex().distanceTo(new Pt(x, y));
         return distance <= 5;
     }
-
-    labelContains(x, y) {
-        const bottomLeftPt = this.bezier(this.label.bezierT);
-        const width = this.label.textInput.scrollWidth;
-        const height = this.label.textInput.scrollHeight;
-        const topRightPt = new Pt(bottomLeftPt.x + width, bottomLeftPt.y - height);
-        return x > bottomLeftPt.x && x < topRightPt.x && y < bottomLeftPt.y && y > topRightPt.y;
-    }
 }
 
 // ********************************************************
@@ -141,7 +228,7 @@ class NonLoopEdge extends Edge {
         this.controlDistanceFromMid = 0;
         this.controlIsForward = true;
         this.setArrowhead();
-        this.setLabel();
+        this.setupLabel();
     }
 
     slideVertex(x, y) {
@@ -171,6 +258,7 @@ class NonLoopEdge extends Edge {
             this.controlIsForward = this.controlPt.x <= midBase.x;
         }
         this.setArrowhead();
+        this.readjustLabel();
     }
 
     readjustForChangedEndpoint() {
@@ -190,6 +278,7 @@ class NonLoopEdge extends Edge {
             this.controlPt = new Pt(midBase.x, midBase.y + controlDistanceFromMid);
         }
         this.setArrowhead();
+        this.readjustLabel();
     }
 
     midBase() {
@@ -235,7 +324,7 @@ class LoopEdge extends Edge {
         }
         this.setArrowhead();
         this.setOffset();
-        this.setLabel();
+        this.setupLabel();
     }
 
     slideVertex(x, y) {
@@ -262,6 +351,7 @@ class LoopEdge extends Edge {
         }
         this.setArrowhead();
         this.setOffset();
+        this.readjustLabel();
     }
 
     readjustForChangedEndpoint() {
@@ -269,6 +359,7 @@ class LoopEdge extends Edge {
         this.endPt = this.head.addPt(this.stateOffset.endPt);
         this.controlPt = this.head.addPt(this.stateOffset.controlPt);
         this.setArrowhead();
+        this.readjustLabel();
     }
 
     setOffset() {
