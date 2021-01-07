@@ -22,6 +22,18 @@ class Edge {
         canvas.drawCircle(this.vertex(), 5, 'red');
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1);
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner2);
+        // TEMP
+        // const vertex = this.vertex();
+        // canvas.drawLine(this.startPt, vertex, 'green');
+        // canvas.drawLine(vertex, this.endPt, 'blue');
+        // for (let t = 0; t <= 1; t += 0.1) {
+        //     let pt = canvas.linearBezier(t, vertex, this.startPt);
+        //     canvas.drawCircle(pt, 3, 'pink');
+        //     canvas.drawText(Math.round(t * 10) / 10, pt);
+        //     pt = this.bezier(t);
+        //     canvas.drawCircle(pt, 3, 'pink');
+        //     canvas.drawText(Math.round(t * 10) / 10, pt);
+        // }
     }
 
     setArrowhead() {
@@ -67,25 +79,44 @@ class Edge {
         this.readjustLabel();
     }
 
-    readjustLabel(labelAnchor = anchor.BOTTOMMIDDLE) {
+    readjustLabel(pt = null) {
         const t = this.label.bezierT;
         const location = this.bezier(t);
         const labelHeight = this.label.textInput.scrollHeight;
         const labelWidth = this.label.textInput.scrollWidth;
         const deriv = this.bezierDerivative(t);
-        console.log(`deriv: (${deriv.x}, ${deriv.y})`);
-        // bottom middle
+        // console.log(`deriv: (${deriv.x}, ${deriv.y})`);
+        // middle anchor
         if (Math.abs(deriv.y) < 15) {
-            this.label.textInput.style.top = location.y - labelHeight;
+            // top middle
+            if (pt && pt.y > location.y) {
+                this.label.textInput.style.top = location.y;
+            // bottom middle
+            } else {
+                this.label.textInput.style.top = location.y - labelHeight;
+            }
             this.label.textInput.style.left = location.x - labelWidth / 2;
-        // bottom left
         } else if (deriv.x * deriv.y > 0) {
-            this.label.textInput.style.top = location.y - labelHeight;
-            this.label.textInput.style.left = location.x;
-        // bottom right
+            // top right
+            if (pt && (pt.x < location.x && pt.y > location.y)) {
+                this.label.textInput.style.top = location.y;
+                this.label.textInput.style.left = location.x - labelWidth;
+                // bottom left
+            } else {
+                this.label.textInput.style.top = location.y - labelHeight;
+                this.label.textInput.style.left = location.x;
+            }
+        // right anchor
         } else {
-            this.label.textInput.style.top = location.y - labelHeight;
-            this.label.textInput.style.left = location.x - labelWidth;
+            // top left
+            if (pt && (pt.x > location.x && pt.y > location.y)) {
+                this.label.textInput.style.top = location.y;
+                this.label.textInput.style.left = location.x;
+            // bottom right
+            } else {
+                this.label.textInput.style.top = location.y - labelHeight;
+                this.label.textInput.style.left = location.x - labelWidth;
+            }
         }
     }
 
@@ -109,15 +140,15 @@ class Edge {
         let lastDistance = Infinity;
         let incrementsArray;
         if (distanceToEnd > distanceToStart) {
-            incrementsArray = [0.001, 0.005, 0.01, 0.05, 0.1];
+            incrementsArray = [0.0005, 0.001, 0.005, 0.01];
         } else {
-            incrementsArray = [-0.001, -0.005, -0.01, -0.05, -0.1];
+            incrementsArray = [-0.0005, -0.001, -0.005, -0.01];
         }
         let increment = incrementsArray.pop();
         let ptOnCurve;
-        let counter = 0;
+        let iterations = 0;
         while (increment && t > 0 && t <= 1) {
-            counter += 1;
+            iterations += 1;
             ptOnCurve = this.bezier(t);
             const currentDistance = pt.distanceTo(ptOnCurve);
             if (currentDistance < lastDistance) {
@@ -129,10 +160,11 @@ class Edge {
                 t += increment || 0;
             }
         }
-        console.log(`iterations: ${counter}`);
+        // canvas.drawCircle(ptOnCurve, 3, 'purple');
+        console.log(`iterations: ${iterations}, distance: ${pt.distanceTo(ptOnCurve)}`);
         if (t > 0 && t <= 1) {
             this.label.bezierT = t;
-            this.readjustLabel();
+            this.readjustLabel(pt);
         }
     }
 

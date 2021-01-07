@@ -82,6 +82,12 @@ class Canvas {
         this.context.stroke();
     }
 
+    linearBezier(t, p0, p1) {
+        const x = (1 - t) * p0.x + t * p1.x;
+        const y = (1 - t) * p0.y + t * p1.y;
+        return new Pt(x, y);
+    }
+
     drawQuadraticCurve(beginPt, controlPt, endPt, colour = 'black') {
         this.context.beginPath();
         this.context.moveTo(beginPt.x, beginPt.y);
