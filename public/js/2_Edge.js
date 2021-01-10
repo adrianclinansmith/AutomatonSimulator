@@ -27,9 +27,15 @@ class Edge {
         // canvas.drawLine(this.startPt, vertex, 'green');
         // canvas.drawLine(vertex, this.endPt, 'blue');
         // for (let t = 0; t <= 1; t += 0.1) {
+        //     //
         //     let pt = canvas.linearBezier(t, vertex, this.startPt);
         //     canvas.drawCircle(pt, 3, 'pink');
         //     canvas.drawText(Math.round(t * 10) / 10, pt);
+        //     //
+        //     pt = canvas.linearBezier(t, this.endPt, vertex);
+        //     canvas.drawCircle(pt, 3, 'pink');
+        //     canvas.drawText(Math.round(t * 10) / 10, pt);
+        //     //
         //     pt = this.bezier(t);
         //     canvas.drawCircle(pt, 3, 'pink');
         //     canvas.drawText(Math.round(t * 10) / 10, pt);
@@ -75,47 +81,57 @@ class Edge {
             textInput.style.width = (textWidth + 1) + 'ch';
         };
         document.getElementById('CanvasDiv').appendChild(textInput);
-        this.label = { textInput, bezierT: 0.5 };
+        this.label = { textInput, bezierT: 0.5, verticalAnchor: 'bottom', horizontalAnchor: 'left' };
         this.readjustLabel();
     }
 
-    readjustLabel(pt = null) {
+    readjustLabel() {
+        const verticalAnchor = this.label.verticalAnchor;
+        const horizontalAnchor = this.label.horizontalAnchor;
         const t = this.label.bezierT;
         const location = this.bezier(t);
         const labelHeight = this.label.textInput.scrollHeight;
         const labelWidth = this.label.textInput.scrollWidth;
         const deriv = this.bezierDerivative(t);
-        // console.log(`deriv: (${deriv.x}, ${deriv.y})`);
-        // middle anchor
-        if (Math.abs(deriv.y) < 15) {
-            // top middle
-            if (pt && pt.y > location.y) {
+        // the curve is more horizontal at t
+        if (Math.abs(deriv.x) > Math.abs(deriv.y)) {
+            // top anchor
+            if (verticalAnchor === 'top') {
                 this.label.textInput.style.top = location.y;
-            // bottom middle
+            // bottom anchor
             } else {
                 this.label.textInput.style.top = location.y - labelHeight;
             }
-            this.label.textInput.style.left = location.x - labelWidth / 2;
-        } else if (deriv.x * deriv.y > 0) {
-            // top right
-            if (pt && (pt.x < location.x && pt.y > location.y)) {
-                this.label.textInput.style.top = location.y;
+            // mid-horizontal anchor
+            if (Math.abs(deriv.y) < 20) {
+                this.label.textInput.style.left = location.x - labelWidth / 2;
+            // right anchor
+            } else if ((deriv.x * deriv.y > 0 && verticalAnchor === 'top') ||
+                        (deriv.x * deriv.y <= 0 && verticalAnchor === 'bottom')) {
                 this.label.textInput.style.left = location.x - labelWidth;
-                // bottom left
+            // left anchor
             } else {
-                this.label.textInput.style.top = location.y - labelHeight;
                 this.label.textInput.style.left = location.x;
             }
-        // right anchor
+        // the curve is more vertical at t
         } else {
-            // top left
-            if (pt && (pt.x > location.x && pt.y > location.y)) {
-                this.label.textInput.style.top = location.y;
+            // left anchor
+            if (horizontalAnchor === 'left') {
                 this.label.textInput.style.left = location.x;
-            // bottom right
+            // right anchor
+            } else {
+                this.label.textInput.style.left = location.x - labelWidth;
+            }
+            // mid-vertical anchor
+            if (Math.abs(deriv.x) < 20) {
+                this.label.textInput.style.top = location.y - labelHeight / 2;
+            // top anchor
+            } else if ((deriv.x * deriv.y > 0 && horizontalAnchor === 'right') ||
+                (deriv.x * deriv.y <= 0 && horizontalAnchor === 'left')) {
+                this.label.textInput.style.top = location.y;
+            // bottom anchor
             } else {
                 this.label.textInput.style.top = location.y - labelHeight;
-                this.label.textInput.style.left = location.x - labelWidth;
             }
         }
     }
@@ -133,39 +149,48 @@ class Edge {
 
     slideLabel(x, y) {
         const pt = new Pt(x, y);
-        let t = 0.5;
-        const distanceToEnd = pt.distanceTo(this.endPt);
-        const distanceToStart = pt.distanceTo(this.startPt);
-        // const distanceToVertex = pt.distanceTo(this.vertex());
+        let t = this.label.bezierT;
+        const forwardDistance = pt.distanceTo(this.bezier(t + 0.001));
+        const backwardDistance = pt.distanceTo(this.bezier(t - 0.001));
+        const increment = forwardDistance < backwardDistance ? 0.001 : -0.001;
         let lastDistance = Infinity;
-        let incrementsArray;
-        if (distanceToEnd > distanceToStart) {
-            incrementsArray = [0.0005, 0.001, 0.005, 0.01];
-        } else {
-            incrementsArray = [-0.0005, -0.001, -0.005, -0.01];
-        }
-        let increment = incrementsArray.pop();
         let ptOnCurve;
         let iterations = 0;
-        while (increment && t > 0 && t <= 1) {
+        while (t > 0 && t <= 1) {
             iterations += 1;
             ptOnCurve = this.bezier(t);
             const currentDistance = pt.distanceTo(ptOnCurve);
-            if (currentDistance < lastDistance) {
-                t += increment;
-                lastDistance = currentDistance;
-            } else {
-                t -= increment;
-                increment = incrementsArray.pop();
-                t += increment || 0;
+            if (currentDistance > lastDistance) {
+                break;
             }
+            t += increment;
+            lastDistance = currentDistance;
         }
-        // canvas.drawCircle(ptOnCurve, 3, 'purple');
-        console.log(`iterations: ${iterations}, distance: ${pt.distanceTo(ptOnCurve)}`);
-        if (t > 0 && t <= 1) {
-            this.label.bezierT = t;
-            this.readjustLabel(pt);
+        if (t <= 0 || t >= 1) {
+            return;
         }
+        // canvas.drawCircle(this.bezier(t), 3, 'purple');
+        console.log(`iterations: ${iterations}`);
+        // Q1
+        const directionPt = ptOnCurve.minusPt(pt);
+        if (directionPt.x > 0 && directionPt.y < 0) {
+            this.label.verticalAnchor = 'top';
+            this.label.horizontalAnchor = 'right';
+        // Q2
+        } else if (directionPt.x < 0 && directionPt.y < 0) {
+            this.label.verticalAnchor = 'top';
+            this.label.horizontalAnchor = 'left';
+        // Q3
+        } else if (directionPt.x < 0 && directionPt.y > 0) {
+            this.label.verticalAnchor = 'bottom';
+            this.label.horizontalAnchor = 'left';
+        // Q4
+        } else if (directionPt.x > 0 && directionPt.y > 0) {
+            this.label.verticalAnchor = 'bottom';
+            this.label.horizontalAnchor = 'right';
+        }
+        this.label.bezierT = t;
+        this.readjustLabel();
     }
 
     bezier(t) {

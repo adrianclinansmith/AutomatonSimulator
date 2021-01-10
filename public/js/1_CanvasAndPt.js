@@ -47,6 +47,10 @@ class Pt {
         }
         return slope * (x - toPt.x) + toPt.y;
     }
+
+    toString() {
+        return `(${this.x}, ${this.y})`;
+    }
 }
 
 // ********************************************************
@@ -62,6 +66,7 @@ class Canvas {
         /** @type {HTMLCanvasElement} */
         this.element = document.getElementById(canvasID);
         this.context = this.element.getContext(contextType);
+        this.context.lineWidth = 1.3;
     }
 
     drawCircle(centerPt, radius, colour = 'black') {
