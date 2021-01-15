@@ -68,7 +68,7 @@ canvas.element.addEventListener('mousemove', function(event) {
     }
     const { x, y } = canvas.eventPointInCanvas(event);
     if (edgeWithLabelToEdit !== null) {
-        edgeWithLabelToEdit.slideLabel(x, y);
+        edgeWithLabelToEdit.label.slideLabel(x, y);
         return;
     }
     canvas.clear();
