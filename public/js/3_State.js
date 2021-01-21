@@ -75,7 +75,7 @@ class State extends Pt {
 
     outEdgeLabelContains(x, y) {
         for (let i = 0; i < this.outEdges.length; i++) {
-            if (this.outEdges[i].labelContains(x, y)) {
+            if (this.outEdges[i].label.labelContains(x, y)) {
                 return i;
             }
         }

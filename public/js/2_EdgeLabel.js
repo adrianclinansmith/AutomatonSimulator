@@ -31,6 +31,7 @@ class EdgeLabel {
         const labelHeight = this.textInput.scrollHeight;
         const labelWidth = this.textInput.scrollWidth;
         const deriv = this.edge.bezierDerivative(t);
+        console.log(`t: ${t}, d: (${deriv.x}, ${deriv.y})`);
         // the curve is more horizontal at t
         if (Math.abs(deriv.x) > Math.abs(deriv.y)) {
             // top anchor
@@ -41,8 +42,11 @@ class EdgeLabel {
                 this.textInput.style.top = location.y - labelHeight;
             }
             // mid-horizontal anchor
-            if (Math.abs(deriv.y) < 20) {
-                this.textInput.style.left = location.x - labelWidth / 2;
+            if (Math.abs(deriv.y) < 60) {
+                let dy = deriv.y;
+                if (this.edge.head.x > this.edge.tail.x) dy *= -1;
+                if (verticalAnchor === 'top') dy *= -1;
+                this.textInput.style.left = location.x - (labelWidth / 2) * (dy / 60 + 1);
             // right anchor
             } else if ((deriv.x * deriv.y > 0 && verticalAnchor === 'top') ||
                         (deriv.x * deriv.y <= 0 && verticalAnchor === 'bottom')) {
@@ -61,8 +65,11 @@ class EdgeLabel {
                 this.textInput.style.left = location.x - labelWidth;
             }
             // mid-vertical anchor
-            if (Math.abs(deriv.x) < 20) {
-                this.textInput.style.top = location.y - labelHeight / 2;
+            if (Math.abs(deriv.x) < 60) {
+                let dx = deriv.x;
+                if (this.edge.head.y > this.edge.tail.y) dx *= -1;
+                if (horizontalAnchor === 'left') dx *= -1;
+                this.textInput.style.top = location.y - (labelHeight / 2) * (dx / 60 + 1);
             // top anchor
             } else if ((deriv.x * deriv.y > 0 && horizontalAnchor === 'right') ||
                 (deriv.x * deriv.y <= 0 && horizontalAnchor === 'left')) {
@@ -90,7 +97,7 @@ class EdgeLabel {
         let t = this.bezierT;
         const forwardDistance = pt.distanceTo(this.edge.bezier(t + 0.001));
         const backwardDistance = pt.distanceTo(this.edge.bezier(t - 0.001));
-        const increment = forwardDistance < backwardDistance ? 0.001 : -0.001;
+        const increment = forwardDistance < backwardDistance ? 0.0001 : -0.0001;
         let lastDistance = Infinity;
         let ptOnCurve;
         let iterations = 0;
