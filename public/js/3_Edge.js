@@ -1,4 +1,4 @@
-/* global canvas Pt EdgeLabel */
+/* global canvas Pt Curve EdgeLabel */
 
 // ********************************************************
 // Edge Class
@@ -16,6 +16,11 @@ class Edge {
         canvas.drawCircle(this.vertex(), 5, 'red');
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1);
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner2);
+        canvas.drawCircle(this.controlPt, 5, 'green');
+        // canvas.drawLine(this.head, this.bezier(0.75), 'red');
+        // canvas.drawLine(this.bezier(0.75), this.bezier(0.5), 'red');
+        // canvas.drawLine(this.bezier(0.5), this.bezier(0.25), 'red');
+        // canvas.drawLine(this.bezier(0.25), this.tail, 'red');
         // TEMP
         // const vertex = this.vertex();
         // canvas.drawLine(this.startPt, vertex, 'green');
@@ -36,12 +41,13 @@ class Edge {
         // }
     }
 
-    setArrowhead() {
+    calculateEndpoints(pt1, pt2) {
+        const curve = new Curve(pt1, this.controlPt, pt2);
         const incrementsArray = [0.001, 0.005, 0.01, 0.05];
         let increment = incrementsArray.pop();
         let t = 0;
         while (increment && t < 0.5) {
-            const pt = this.bezier(t);
+            const pt = curve.bezier(t);
             if (this.tail.contains(pt.x, pt.y)) {
                 t += increment;
             } else {
@@ -50,11 +56,14 @@ class Edge {
                 t += increment || 0;
             }
         }
-        if (t >= 0.5) {
-            return;
-        }
-        const tip = this.bezier(t);
-        const ptForSlope = this.bezier(t + 0.01);
+        this.endPt = curve.bezier(t);
+        this.startPt = curve.bezier(1 - t);
+        this.endT = t;
+    }
+
+    setArrowhead() {
+        const tip = this.endPt;
+        const ptForSlope = this.bezier(this.endT + 0.01);
         // src: http://www.dbp-consulting.com/tutorials/canvas/CanvasArrow.html
         const angle = Math.atan2(ptForSlope.y - tip.y, ptForSlope.x - tip.x);
         const theta = Math.PI / 4;
@@ -152,18 +161,21 @@ class Edge {
 class NonLoopEdge extends Edge {
     constructor(head, tail, controlPt = null) {
         super(head, tail);
-        this.startPt = head;
-        this.endPt = tail;
         if (controlPt === null) {
             this.controlPt = new Pt((head.x + tail.x) / 2, (head.y + tail.y) / 2);
         } else {
             this.controlPt = controlPt;
         }
+        this.calculateEndpoints();
+        this.setArrowhead();
         this.controlDistanceFromMid = 0;
         this.controlIsForward = true;
-        this.setArrowhead();
         // this.setupLabel();
         this.label = new EdgeLabel(this);
+    }
+
+    calculateEndpoints() {
+        super.calculateEndpoints(this.head, this.tail);
     }
 
     slideVertex(x, y) {
@@ -192,6 +204,7 @@ class NonLoopEdge extends Edge {
         } else {
             this.controlIsForward = this.controlPt.x <= midBase.x;
         }
+        this.calculateEndpoints();
         this.setArrowhead();
         this.label.readjustLabel();
     }
@@ -212,13 +225,14 @@ class NonLoopEdge extends Edge {
         } else {
             this.controlPt = new Pt(midBase.x, midBase.y + controlDistanceFromMid);
         }
+        this.calculateEndpoints();
         this.setArrowhead();
         this.label.readjustLabel();
     }
 
     midBase() {
-        const x = (this.head.x + this.tail.x) / 2;
-        const y = (this.head.y + this.tail.y) / 2;
+        const x = (this.startPt.x + this.endPt.x) / 2;
+        const y = (this.startPt.y + this.endPt.y) / 2;
         return new Pt(x, y);
     }
 
@@ -250,23 +264,37 @@ class NonLoopEdge extends Edge {
 class LoopEdge extends Edge {
     constructor(state, controlPt = null) {
         super(state, state);
-        this.startPt = new Pt(state.x - state.radius / 2, state.y);
-        this.endPt = new Pt(state.x + state.radius / 2, state.y);
+        // this.startPt = new Pt(state.x - state.radius / 2, state.y);
+        // this.endPt = new Pt(state.x + state.radius / 2, state.y);
         if (controlPt === null) {
             this.controlPt = new Pt(state.x, state.y - state.radius * 4);
         } else {
             this.controlPt = controlPt;
         }
+        this.calculateEndpoints(0);
         this.setArrowhead();
         this.setOffset();
         // this.setupLabel();
         this.label = new EdgeLabel(this);
     }
 
+    calculateEndpoints(slope) {
+        const state = this.head;
+        let p0, p1;
+        if (this.controlPt.y < state.y) {
+            p0 = state.ptAlongSlope(slope, -1 * state.radius / 2);
+            p1 = state.ptAlongSlope(slope, state.radius / 2);
+        } else {
+            p0 = state.ptAlongSlope(slope, state.radius / 2);
+            p1 = state.ptAlongSlope(slope, -1 * state.radius / 2);
+        }
+        super.calculateEndpoints(p0, p1);
+    }
+
     slideVertex(x, y) {
         const state = this.head;
         const newVertex = new Pt(x, y);
-        const distance = newVertex.distanceTo(state);
+        const distance = newVertex.distanceTo(state) - state.radius;
         const m = newVertex.slopeTo(state);
         const maybeControl1 = newVertex.ptAlongSlope(m, -1 * distance);
         const maybeControl2 = newVertex.ptAlongSlope(m, distance);
@@ -275,16 +303,8 @@ class LoopEdge extends Edge {
         } else {
             this.controlPt = maybeControl2;
         }
-        const p0 = new Pt(5, newVertex.perpendicularFunction(5, state));
-        const p1 = new Pt(50, newVertex.perpendicularFunction(50, state));
-        const slope = p0.slopeTo(p1);
-        if (newVertex.y < state.y) {
-            this.startPt = state.ptAlongSlope(slope, -1 * state.radius / 2);
-            this.endPt = state.ptAlongSlope(slope, state.radius / 2);
-        } else {
-            this.startPt = state.ptAlongSlope(slope, state.radius / 2);
-            this.endPt = state.ptAlongSlope(slope, -1 * state.radius / 2);
-        }
+        const perpM = -1 / m;
+        this.calculateEndpoints(perpM);
         this.setArrowhead();
         this.setOffset();
         this.label.readjustLabel();

@@ -40,6 +40,8 @@ class Pt {
         return new Pt(x, y);
     }
 
+    // A linear function f(x) that passes through this point and which has a
+    // slope that is perpendicular to the line formed by this and toPt.
     perpendicularFunction(x, toPt, inverse = false) {
         const slope = (this.x - toPt.x) / (toPt.y - this.y);
         if (inverse) {
@@ -50,6 +52,32 @@ class Pt {
 
     toString() {
         return `(${this.x}, ${this.y})`;
+    }
+}
+
+// ********************************************************
+// Curve Class
+// ********************************************************
+
+/*
+Represents a bezier curve on the Cartesian plane.
+*/
+
+// eslint-disable-next-line no-unused-vars
+class Curve {
+    constructor(startPt, controlPt, endPt) {
+        this.startPt = startPt;
+        this.controlPt = controlPt;
+        this.endPt = endPt;
+    }
+
+    bezier(t) {
+        const p0 = this.endPt;
+        const p1 = this.controlPt;
+        const p2 = this.startPt;
+        const x = p1.x + (1 - t) * (1 - t) * (p0.x - p1.x) + t * t * (p2.x - p1.x);
+        const y = p1.y + (1 - t) * (1 - t) * (p0.y - p1.y) + t * t * (p2.y - p1.y);
+        return new Pt(x, y);
     }
 }
 

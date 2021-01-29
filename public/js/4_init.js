@@ -20,7 +20,7 @@ statesArray[0].makeOutEdgeTo(statesArray[1]);
 // statesArray[0].makeOutEdgeTo(statesArray[4]);
 // statesArray[4].makeOutEdgeTo(statesArray[1]);
 // statesArray[2].makeOutEdgeTo(statesArray[4]);
-// statesArray[0].makeOutEdgeTo(statesArray[0]);
+statesArray[0].makeOutEdgeTo(statesArray[0]);
 
 for (let i = 0; i < statesArray.length; i++) {
     statesArray[i].drawOutEdges();
@@ -79,10 +79,10 @@ canvas.element.addEventListener('mousemove', function(event) {
     }
     // draw all vertices
     for (let i = 0; i < statesArray.length; i++) {
-        statesArray[i].drawOutEdges();
+        statesArray[i].draw();
     }
     // draw all edges
     for (let i = 0; i < statesArray.length; i++) {
-        statesArray[i].draw();
+        statesArray[i].drawOutEdges();
     }
 });
