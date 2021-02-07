@@ -24,9 +24,9 @@ class State extends Pt {
         }
     }
 
-    setCenter(x, y) {
-        this.x = x;
-        this.y = y;
+    setCenter(pt) {
+        this.x = pt.x;
+        this.y = pt.y;
         for (let i = 0; i < this.outEdges.length; i++) {
             this.outEdges[i].readjustForChangedEndpoint();
         }
@@ -35,12 +35,12 @@ class State extends Pt {
         }
     }
 
-    slideOutEdgeVertex(x, y, index) {
-        this.outEdges[index].slideVertex(x, y);
+    slideOutEdgeVertex(pt, index) {
+        this.outEdges[index].slideVertex(pt);
     }
 
-    contains(x, y) {
-        const distance = this.distanceTo({ x, y });
+    contains(pt) {
+        const distance = this.distanceTo(pt);
         return distance <= this.radius;
     }
 
@@ -55,27 +55,27 @@ class State extends Pt {
         tail.inEdges.push(newEdge);
     }
 
-    outEdgeContains(x, y) {
+    outEdgeContains(pt) {
         for (let i = 0; i < this.outEdges.length; i++) {
-            if (this.outEdges[i].contains(x, y)) {
+            if (this.outEdges[i].contains(pt)) {
                 return i;
             }
         }
         return null;
     }
 
-    outEdgeVertexContains(x, y) {
+    outEdgeVertexContains(pt) {
         for (let i = 0; i < this.outEdges.length; i++) {
-            if (this.outEdges[i].vertexContains(x, y)) {
+            if (this.outEdges[i].vertexContains(pt)) {
                 return i;
             }
         }
         return null;
     }
 
-    outEdgeLabelContains(x, y) {
+    outEdgeLabelContains(pt) {
         for (let i = 0; i < this.outEdges.length; i++) {
-            if (this.outEdges[i].label.labelContains(x, y)) {
+            if (this.outEdges[i].label.labelContains(pt)) {
                 return i;
             }
         }

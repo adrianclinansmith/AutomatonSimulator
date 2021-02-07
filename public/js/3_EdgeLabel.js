@@ -31,7 +31,7 @@ class EdgeLabel {
         const labelHeight = this.textInput.scrollHeight;
         const labelWidth = this.textInput.scrollWidth;
         const deriv = this.edge.bezierDerivative(t);
-        console.log(`t: ${t}, d: (${deriv.x}, ${deriv.y})`);
+        // console.log(`t: ${t}, d: (${deriv.x}, ${deriv.y})`);
         // the curve is more horizontal at t
         if (Math.abs(deriv.x) > Math.abs(deriv.y)) {
             // top anchor
@@ -81,7 +81,7 @@ class EdgeLabel {
         }
     }
 
-    labelContains(x, y) {
+    labelContains(pt) {
         const textInput = this.textInput;
         const width = textInput.scrollWidth;
         const height = textInput.scrollHeight;
@@ -89,20 +89,19 @@ class EdgeLabel {
         const top = Number(textInput.style.top.replace(/[^.\d]/g, ''));
         const topLeftPt = new Pt(left, top);
         const bottomRightPt = new Pt(left + width, top + height);
-        return x > topLeftPt.x && x < bottomRightPt.x && y > topLeftPt.y && y < bottomRightPt.y;
+        return pt.x > topLeftPt.x && pt.x < bottomRightPt.x && pt.y > topLeftPt.y && pt.y < bottomRightPt.y;
     }
 
-    slideLabel(x, y) {
-        const pt = new Pt(x, y);
+    slideLabel(pt) {
         let t = this.bezierT;
         const forwardDistance = pt.distanceTo(this.edge.bezier(t + 0.001));
         const backwardDistance = pt.distanceTo(this.edge.bezier(t - 0.001));
         const increment = forwardDistance < backwardDistance ? 0.0001 : -0.0001;
         let lastDistance = Infinity;
         let ptOnCurve;
-        let iterations = 0;
+        // let iterations = 0;
         while (t > 0 && t <= 1) {
-            iterations += 1;
+            // iterations += 1;
             ptOnCurve = this.edge.bezier(t);
             const currentDistance = pt.distanceTo(ptOnCurve);
             if (currentDistance > lastDistance) {
@@ -115,7 +114,7 @@ class EdgeLabel {
             return;
         }
         // canvas.drawCircle(this.bezier(t), 3, 'purple');
-        console.log(`iterations: ${iterations}`);
+        // console.log(`iterations: ${iterations}`);
         // Q1
         const directionPt = ptOnCurve.minusPt(pt);
         if (directionPt.x > 0 && directionPt.y < 0) {

@@ -37,19 +37,26 @@ let edgeWithVertexToDrag = null;
 let edgeWithLabelToEdit = null;
 
 canvas.element.addEventListener('mousedown', function(event) {
-    const { x, y } = canvas.eventPointInCanvas(event);
+    const clickedPt = canvas.eventPointInCanvas(event);
     let j = null;
     for (let i = 0; i < statesArray.length; i++) {
-        if ((j = statesArray[i].outEdgeLabelContains(x, y)) !== null) {
+        if ((j = statesArray[i].outEdgeLabelContains(clickedPt)) !== null) {
             edgeWithLabelToEdit = statesArray[i].outEdges[j];
             return;
-        } else if (statesArray[i].contains(x, y)) {
+        } else if (statesArray[i].contains(clickedPt)) {
             stateToDrag = statesArray[i];
             return;
-        } else if ((j = statesArray[i].outEdgeVertexContains(x, y)) !== null) {
+        } else if ((j = statesArray[i].outEdgeVertexContains(clickedPt)) !== null) {
             edgeWithVertexToDrag = statesArray[i].outEdges[j];
             return;
         }
+        //
+        if ((j = statesArray[i].outEdgeContains(clickedPt)) !== null) {
+            console.log('CLICKED EDGE!');
+        } else {
+            // console.log('didnt click');
+        }
+        //
     }
 });
 
@@ -66,16 +73,16 @@ canvas.element.addEventListener('mousemove', function(event) {
     if (stateToDrag === null && edgeWithVertexToDrag === null && edgeWithLabelToEdit === null) {
         return;
     }
-    const { x, y } = canvas.eventPointInCanvas(event);
+    const draggedPt = canvas.eventPointInCanvas(event);
     if (edgeWithLabelToEdit !== null) {
-        edgeWithLabelToEdit.label.slideLabel(x, y);
+        edgeWithLabelToEdit.label.slideLabel(draggedPt);
         return;
     }
     canvas.clear();
     if (stateToDrag !== null) {
-        stateToDrag.setCenter(x, y);
+        stateToDrag.setCenter(draggedPt);
     } else if (edgeWithVertexToDrag !== null) {
-        edgeWithVertexToDrag.slideVertex(x, y);
+        edgeWithVertexToDrag.slideVertex(draggedPt);
     }
     // draw all vertices
     for (let i = 0; i < statesArray.length; i++) {
