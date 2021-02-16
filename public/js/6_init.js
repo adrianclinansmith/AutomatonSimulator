@@ -9,7 +9,9 @@ console.log('Adrian Clinansmith');
 // Initialize Graph
 // ********************************
 
-/* global State canvas */
+/* global State Canvas */
+
+const canvas = new Canvas();
 
 const rad = 30;
 const statesArray = [new State(150, 200, rad), new State(350, 200, rad), new State(150, 300, rad),
@@ -23,10 +25,10 @@ statesArray[0].makeOutEdgeTo(statesArray[1]);
 statesArray[0].makeOutEdgeTo(statesArray[0]);
 
 for (let i = 0; i < statesArray.length; i++) {
-    statesArray[i].drawOutEdges();
+    statesArray[i].drawOutEdges(canvas);
 }
 for (let i = 0; i < statesArray.length; i++) {
-    statesArray[i].draw();
+    statesArray[i].draw(canvas);
 }
 // ********************************
 // Event Listeners
@@ -97,10 +99,10 @@ canvas.element.addEventListener('mousemove', function(event) {
     }
     // draw all vertices
     for (let i = 0; i < statesArray.length; i++) {
-        statesArray[i].draw();
+        statesArray[i].draw(canvas);
     }
     // draw all edges
     for (let i = 0; i < statesArray.length; i++) {
-        statesArray[i].drawOutEdges();
+        statesArray[i].drawOutEdges(canvas);
     }
 });

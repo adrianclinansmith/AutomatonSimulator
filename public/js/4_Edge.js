@@ -1,12 +1,15 @@
-/* global canvas Pt Curve EdgeLabel */
+/* global Pt Curve EdgeLabel */
 
 // ********************************************************
 // Edge Class
 // ********************************************************
 
 /*
-An edge that represents a connection between states.
-This is an abstract class and thus must be subclassed.
+Abstract class: must be subclassed to be used.
+
+A directed edge between states, depicted as a quadratic bezier curve.
+Head & tail are the state(s) that are connected by this edge.
+startPt & endPt are the last points that are drawn, t=1 & t=0 respectively.
 */
 
 // eslint-disable-next-line no-unused-vars
@@ -18,7 +21,7 @@ class Edge extends Curve {
         this.isSelected = false;
     }
 
-    draw() {
+    draw(canvas) {
         const color = this.isSelected ? 'red' : 'black';
         canvas.drawQuadraticCurve(this.startPt, this.controlPt, this.endPt, color);
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1, color);
@@ -26,16 +29,6 @@ class Edge extends Curve {
         if (this.isSelected) {
             canvas.drawCircle(this.vertex(), 5, color);
         }
-        //
-        // const step = 0.1;
-        // let color = 'red';
-        // for (let t = 0; t <= 1 - step; t += step) {
-        //     const pt1 = this.bezier(t);
-        //     const pt2 = this.bezier(t + step);
-        //     canvas.drawLine(pt1, pt2, color);
-        //     color = color === 'red' ? 'green' : 'red';
-        // }
-        //
     }
 
     calculateEndpoints(head = this.head, tail = this.tail) {
@@ -110,6 +103,10 @@ class Edge extends Curve {
 // ********************************************************
 // Non-Loop Edge Class
 // ********************************************************
+
+/*
+A concrete subclass of Edge which connects two different states.
+*/
 
 // eslint-disable-next-line no-unused-vars
 class NonLoopEdge extends Edge {
@@ -209,6 +206,10 @@ class NonLoopEdge extends Edge {
 // ********************************************************
 // Loop Edge Class
 // ********************************************************
+
+/*
+A concrete subclass of Edge which connects one state to itself.
+*/
 
 // eslint-disable-next-line no-unused-vars
 class LoopEdge extends Edge {

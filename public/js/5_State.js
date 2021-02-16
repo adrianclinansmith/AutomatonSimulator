@@ -1,4 +1,4 @@
-/* global canvas Pt NonLoopEdge LoopEdge */
+/* global Pt NonLoopEdge LoopEdge */
 
 // ********************************************************
 // State Class
@@ -14,13 +14,13 @@ class State extends Pt {
         this.colour = colour;
     }
 
-    draw() {
+    draw(canvas) {
         canvas.drawCircle(this, this.radius, this.colour);
     }
 
-    drawOutEdges() {
+    drawOutEdges(canvas) {
         for (let i = 0; i < this.outEdges.length; i++) {
-            this.outEdges[i].draw();
+            this.outEdges[i].draw(canvas);
         }
     }
 
