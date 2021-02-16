@@ -14,6 +14,10 @@ class State extends Pt {
         this.colour = colour;
     }
 
+    contains(pt) {
+        return this.ptIsWithinRadius(pt, this.radius);
+    }
+
     draw(canvas) {
         canvas.drawCircle(this, this.radius, this.colour);
     }
@@ -24,23 +28,9 @@ class State extends Pt {
         }
     }
 
-    setCenter(pt) {
-        this.x = pt.x;
-        this.y = pt.y;
-        for (let i = 0; i < this.outEdges.length; i++) {
-            this.outEdges[i].readjustForChangedEndpoint();
-        }
-        for (let i = 0; i < this.inEdges.length; i++) {
-            this.inEdges[i].readjustForChangedEndpoint();
-        }
-    }
-
-    slideOutEdgeVertex(pt, index) {
-        this.outEdges[index].slideVertex(pt);
-    }
-
-    contains(pt) {
-        return this.ptIsWithinRadius(pt, this.radius);
+    focusOutEdgeLabel(outEdgeIndex) {
+        const outEdge = this.outEdges[outEdgeIndex];
+        outEdge.label.textInput.focus();
     }
 
     makeOutEdgeTo(tail) {
@@ -67,6 +57,15 @@ class State extends Pt {
         return edgeIndex;
     }
 
+    outEdgeLabelContains(pt) {
+        for (let i = 0; i < this.outEdges.length; i++) {
+            if (this.outEdges[i].label.labelContains(pt)) {
+                return i;
+            }
+        }
+        return null;
+    }
+
     outEdgeVertexContains(pt) {
         for (let i = 0; i < this.outEdges.length; i++) {
             const edge = this.outEdges[i];
@@ -78,17 +77,18 @@ class State extends Pt {
         return null;
     }
 
-    outEdgeLabelContains(pt) {
+    setCenter(pt) {
+        this.x = pt.x;
+        this.y = pt.y;
         for (let i = 0; i < this.outEdges.length; i++) {
-            if (this.outEdges[i].label.labelContains(pt)) {
-                return i;
-            }
+            this.outEdges[i].readjustForChangedEndpoint();
         }
-        return null;
+        for (let i = 0; i < this.inEdges.length; i++) {
+            this.inEdges[i].readjustForChangedEndpoint();
+        }
     }
 
-    focusOutEdgeLabel(outEdgeIndex) {
-        const outEdge = this.outEdges[outEdgeIndex];
-        outEdge.label.textInput.focus();
+    slideOutEdgeVertex(pt, index) {
+        this.outEdges[index].slideVertex(pt);
     }
 }

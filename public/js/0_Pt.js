@@ -13,25 +13,26 @@ class Pt {
         this.y = y;
     }
 
-    distanceTo(otherPt) {
-        return Math.hypot(this.x - otherPt.x, this.y - otherPt.y);
-    }
-
-    slopeTo(otherPt) {
-        return (otherPt.y - this.y) / (otherPt.x - this.x);
-    }
-
     addPt(addendPt) {
         return new Pt(this.x + addendPt.x, this.y + addendPt.y);
     }
 
-    ptIsWithinRadius(otherPt, radius) {
-        const distance = this.distanceTo(otherPt);
-        return distance <= radius;
+    distanceTo(otherPt) {
+        return Math.hypot(this.x - otherPt.x, this.y - otherPt.y);
     }
 
     minusPt(subtrahendPt) {
         return new Pt(this.x - subtrahendPt.x, this.y - subtrahendPt.y);
+    }
+
+    // A linear function f(x) that passes through this point and which has a
+    // slope that is perpendicular to the line formed by this and toPt.
+    perpendicularFunction(x, toPt, inverse = false) {
+        const slope = (this.x - toPt.x) / (toPt.y - this.y);
+        if (inverse) {
+            return (x - toPt.y) / slope + toPt.x;
+        }
+        return slope * (x - toPt.x) + toPt.y;
     }
 
     ptAlongSlope(slope, distance) {
@@ -46,14 +47,13 @@ class Pt {
         return new Pt(x, y);
     }
 
-    // A linear function f(x) that passes through this point and which has a
-    // slope that is perpendicular to the line formed by this and toPt.
-    perpendicularFunction(x, toPt, inverse = false) {
-        const slope = (this.x - toPt.x) / (toPt.y - this.y);
-        if (inverse) {
-            return (x - toPt.y) / slope + toPt.x;
-        }
-        return slope * (x - toPt.x) + toPt.y;
+    ptIsWithinRadius(otherPt, radius) {
+        const distance = this.distanceTo(otherPt);
+        return distance <= radius;
+    }
+
+    slopeTo(otherPt) {
+        return (otherPt.y - this.y) / (otherPt.x - this.x);
     }
 
     toString() {

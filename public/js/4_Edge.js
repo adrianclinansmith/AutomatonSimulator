@@ -9,7 +9,7 @@ Abstract class: must be subclassed to be used.
 
 A directed edge between states, depicted as a quadratic bezier curve.
 Head & tail are the state(s) that are connected by this edge.
-startPt & endPt are the last points that are drawn, t=1 & t=0 respectively.
+startPt & endPt are the last points that are drawn; t=1 & t=0 respectively.
 */
 
 // eslint-disable-next-line no-unused-vars
@@ -19,16 +19,6 @@ class Edge extends Curve {
         this.head = head;
         this.tail = tail;
         this.isSelected = false;
-    }
-
-    draw(canvas) {
-        const color = this.isSelected ? 'red' : 'black';
-        canvas.drawQuadraticCurve(this.startPt, this.controlPt, this.endPt, color);
-        canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1, color);
-        canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner2, color);
-        if (this.isSelected) {
-            canvas.drawCircle(this.vertex(), 5, color);
-        }
     }
 
     calculateEndpoints(head = this.head, tail = this.tail) {
@@ -50,6 +40,20 @@ class Edge extends Curve {
         this.startPt = curve.bezier(1 - t);
     }
 
+    draw(canvas) {
+        const color = this.isSelected ? 'red' : 'black';
+        canvas.drawQuadraticCurve(this.startPt, this.controlPt, this.endPt, color);
+        canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1, color);
+        canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner2, color);
+        if (this.isSelected) {
+            canvas.drawCircle(this.vertex(), 5, color);
+        }
+    }
+
+    labelContains(pt) {
+        return this.label.labelContains(pt);
+    }
+
     setArrowhead() {
         const tip = this.endPt;
         const ptForSlope = this.bezier(0.01);
@@ -64,35 +68,9 @@ class Edge extends Curve {
         this.arrowhead = { tip, corner1, corner2 };
     }
 
-    labelContains(pt) {
-        return this.label.labelContains(pt);
-    }
-
     vertex() {
         return this.bezier(0.5);
     }
-
-    // TEMP: will change
-    // contains(x, y) {
-    //     const [x0, y0] = [this.head.x, this.head.y];
-    //     const [x1, y1] = [this.controlPt.x, this.controlPt.y];
-    //     const [x2, y2] = [this.tail.x, this.tail.y];
-    //     const headTailDistance = Math.hypot(x0 - x2, y0 - y2);
-    //     const max = Math.round(((headTailDistance + this.controlDistanceFromMid) / 100) * 100) / 10;
-    //     for (let n = 0; n <= max; n++) {
-    //         const t = n / max;
-    //         // quadratic bezier equation
-    //         const xt = x1 + (1 - t) * (1 - t) * (x0 - x1) + t * t * (x2 - x1);
-    //         const yt = y1 + (1 - t) * (1 - t) * (y0 - y1) + t * t * (y2 - y1);
-    //         const inX = x >= xt - 5 && x <= xt + 5;
-    //         const inY = y >= yt - 5 && y <= yt + 5;
-    //         if (inX && inY) {
-    //             canvas.drawCircle(new Pt(xt, yt), 5, 'green');
-    //             return true;
-    //         }
-    //     }
-    //     return false;
-    // }
 
     vertexContains(pt) {
         const distance = this.vertex().distanceTo(pt);
@@ -125,6 +103,52 @@ class NonLoopEdge extends Edge {
         this.label = new EdgeLabel(this);
     }
 
+    // The axis of symmetry is a linear function that is perpendicular to
+    // a straight line contecting the head and tail.
+    axisOfSymmetry(x, inverse = false) {
+        const h = this.head;
+        const t = this.tail;
+        const slope = (h.x - t.x) / (t.y - h.y);
+        const mid = new Pt((h.x + t.x) / 2, (h.y + t.y) / 2);
+        if (inverse) {
+            return (x - mid.y) / slope + mid.x;
+        }
+        return slope * (x - mid.x) + mid.y;
+    }
+
+    axisOfSymmetrySlope() {
+        const rise = this.axisOfSymmetry(500) - this.axisOfSymmetry(5);
+        const run = 500 - 5;
+        return rise / run;
+    }
+
+    midBase() {
+        const x = (this.startPt.x + this.endPt.x) / 2;
+        const y = (this.startPt.y + this.endPt.y) / 2;
+        return new Pt(x, y);
+    }
+
+    readjustForChangedEndpoint() {
+        const head = this.head;
+        const tail = this.tail;
+        const controlIsForward = this.controlIsForward;
+        let controlDistanceFromMid = this.controlDistanceFromMid;
+        const tailIsAboveHead = head.y > tail.y || (head.y === tail.y && head.x < tail.x);
+        if ((controlIsForward && tailIsAboveHead) || !(controlIsForward || tailIsAboveHead)) {
+            controlDistanceFromMid = -1 * controlDistanceFromMid;
+        }
+        const midBase = this.midBase();
+        const m = this.axisOfSymmetrySlope();
+        if (Number.isFinite(m)) {
+            this.controlPt = midBase.ptAlongSlope(m, controlDistanceFromMid);
+        } else {
+            this.controlPt = new Pt(midBase.x, midBase.y + controlDistanceFromMid);
+        }
+        this.calculateEndpoints();
+        this.setArrowhead();
+        this.label.readjustLabel();
+    }
+
     slideVertex(pt) {
         const head = this.head;
         const tail = this.tail;
@@ -154,52 +178,6 @@ class NonLoopEdge extends Edge {
         this.calculateEndpoints();
         this.setArrowhead();
         this.label.readjustLabel();
-    }
-
-    readjustForChangedEndpoint() {
-        const head = this.head;
-        const tail = this.tail;
-        const controlIsForward = this.controlIsForward;
-        let controlDistanceFromMid = this.controlDistanceFromMid;
-        const tailIsAboveHead = head.y > tail.y || (head.y === tail.y && head.x < tail.x);
-        if ((controlIsForward && tailIsAboveHead) || !(controlIsForward || tailIsAboveHead)) {
-            controlDistanceFromMid = -1 * controlDistanceFromMid;
-        }
-        const midBase = this.midBase();
-        const m = this.axisOfSymmetrySlope();
-        if (Number.isFinite(m)) {
-            this.controlPt = midBase.ptAlongSlope(m, controlDistanceFromMid);
-        } else {
-            this.controlPt = new Pt(midBase.x, midBase.y + controlDistanceFromMid);
-        }
-        this.calculateEndpoints();
-        this.setArrowhead();
-        this.label.readjustLabel();
-    }
-
-    midBase() {
-        const x = (this.startPt.x + this.endPt.x) / 2;
-        const y = (this.startPt.y + this.endPt.y) / 2;
-        return new Pt(x, y);
-    }
-
-    // The axis of symmetry is a linear function that is perpendicular to
-    // a straight line contecting the head and tail.
-    axisOfSymmetry(x, inverse = false) {
-        const h = this.head;
-        const t = this.tail;
-        const slope = (h.x - t.x) / (t.y - h.y);
-        const mid = new Pt((h.x + t.x) / 2, (h.y + t.y) / 2);
-        if (inverse) {
-            return (x - mid.y) / slope + mid.x;
-        }
-        return slope * (x - mid.x) + mid.y;
-    }
-
-    axisOfSymmetrySlope() {
-        const rise = this.axisOfSymmetry(500) - this.axisOfSymmetry(5);
-        const run = 500 - 5;
-        return rise / run;
     }
 }
 
@@ -242,6 +220,21 @@ class LoopEdge extends Edge {
         super.calculateEndpoints(p0, p1);
     }
 
+    readjustForChangedEndpoint() {
+        this.startPt = this.head.addPt(this.stateOffset.startPt);
+        this.endPt = this.head.addPt(this.stateOffset.endPt);
+        this.controlPt = this.head.addPt(this.stateOffset.controlPt);
+        this.setArrowhead();
+        this.label.readjustLabel();
+    }
+
+    setOffset() {
+        const startPt = this.startPt.minusPt(this.head);
+        const endPt = this.endPt.minusPt(this.head);
+        const controlPt = this.controlPt.minusPt(this.head);
+        this.stateOffset = { startPt, endPt, controlPt };
+    }
+
     slideVertex(newVertexPt) {
         const state = this.head;
         const distance = newVertexPt.distanceTo(state) - state.radius;
@@ -257,20 +250,5 @@ class LoopEdge extends Edge {
         this.setArrowhead();
         this.setOffset();
         this.label.readjustLabel();
-    }
-
-    readjustForChangedEndpoint() {
-        this.startPt = this.head.addPt(this.stateOffset.startPt);
-        this.endPt = this.head.addPt(this.stateOffset.endPt);
-        this.controlPt = this.head.addPt(this.stateOffset.controlPt);
-        this.setArrowhead();
-        this.label.readjustLabel();
-    }
-
-    setOffset() {
-        const startPt = this.startPt.minusPt(this.head);
-        const endPt = this.endPt.minusPt(this.head);
-        const controlPt = this.controlPt.minusPt(this.head);
-        this.stateOffset = { startPt, endPt, controlPt };
     }
 }

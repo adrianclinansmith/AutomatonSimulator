@@ -22,6 +22,12 @@ class Canvas {
         this.context.lineWidth = 1.3;
     }
 
+    clear() {
+        const width = this.element.width;
+        const height = this.element.height;
+        this.context.clearRect(0, 0, width, height);
+    }
+
     drawCircle(centerPt, radius, colour = 'black') {
         this.context.beginPath();
         this.context.arc(centerPt.x, centerPt.y, radius, 0, 2 * Math.PI);
@@ -38,12 +44,6 @@ class Canvas {
         this.context.quadraticCurveTo(p2.x, p2.y, pt1.x, pt1.y);
         this.context.strokeStyle = colour;
         this.context.stroke();
-    }
-
-    linearBezier(t, p0, p1) {
-        const x = (1 - t) * p0.x + t * p1.x;
-        const y = (1 - t) * p0.y + t * p1.y;
-        return new Pt(x, y);
     }
 
     drawQuadraticCurve(beginPt, controlPt, endPt, colour = 'black') {
@@ -68,10 +68,10 @@ class Canvas {
         return new Pt(x, y);
     }
 
-    clear() {
-        const width = this.element.width;
-        const height = this.element.height;
-        this.context.clearRect(0, 0, width, height);
+    linearBezier(t, p0, p1) {
+        const x = (1 - t) * p0.x + t * p1.x;
+        const y = (1 - t) * p0.y + t * p1.y;
+        return new Pt(x, y);
     }
 }
 // const canvas = new Canvas();

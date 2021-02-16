@@ -23,6 +23,17 @@ class EdgeLabel {
         this.readjustLabel();
     }
 
+    labelContains(pt) {
+        const textInput = this.textInput;
+        const width = textInput.scrollWidth;
+        const height = textInput.scrollHeight;
+        const left = Number(textInput.style.left.replace(/[^.\d]/g, ''));
+        const top = Number(textInput.style.top.replace(/[^.\d]/g, ''));
+        const topLeftPt = new Pt(left, top);
+        const bottomRightPt = new Pt(left + width, top + height);
+        return pt.x > topLeftPt.x && pt.x < bottomRightPt.x && pt.y > topLeftPt.y && pt.y < bottomRightPt.y;
+    }
+
     readjustLabel() {
         const verticalAnchor = this.verticalAnchor;
         const horizontalAnchor = this.horizontalAnchor;
@@ -83,17 +94,6 @@ class EdgeLabel {
                 this.textInput.style.top = `${location.y - labelHeight}px`;
             }
         }
-    }
-
-    labelContains(pt) {
-        const textInput = this.textInput;
-        const width = textInput.scrollWidth;
-        const height = textInput.scrollHeight;
-        const left = Number(textInput.style.left.replace(/[^.\d]/g, ''));
-        const top = Number(textInput.style.top.replace(/[^.\d]/g, ''));
-        const topLeftPt = new Pt(left, top);
-        const bottomRightPt = new Pt(left + width, top + height);
-        return pt.x > topLeftPt.x && pt.x < bottomRightPt.x && pt.y > topLeftPt.y && pt.y < bottomRightPt.y;
     }
 
     slideLabel(pt) {
