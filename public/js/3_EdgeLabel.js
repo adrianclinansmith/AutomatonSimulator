@@ -36,47 +36,51 @@ class EdgeLabel {
         if (Math.abs(deriv.x) > Math.abs(deriv.y)) {
             // top anchor
             if (verticalAnchor === 'top') {
-                this.textInput.style.top = location.y;
+                const topString = `${location.y}px`;
+                this.textInput.style.top = topString;
             // bottom anchor
             } else {
-                this.textInput.style.top = location.y - labelHeight;
+                const topString = `${location.y - labelHeight}px`;
+                this.textInput.style.top = topString;
             }
             // mid-horizontal anchor
             if (Math.abs(deriv.y) < 60) {
                 let dy = deriv.y;
                 if (this.edge.head.x > this.edge.tail.x) dy *= -1;
                 if (verticalAnchor === 'top') dy *= -1;
-                this.textInput.style.left = location.x - (labelWidth / 2) * (dy / 60 + 1);
+                const leftString = `${location.x - (labelWidth / 2) * (dy / 60 + 1)}px`;
+                this.textInput.style.left = leftString;
             // right anchor
             } else if ((deriv.x * deriv.y > 0 && verticalAnchor === 'top') ||
                         (deriv.x * deriv.y <= 0 && verticalAnchor === 'bottom')) {
-                this.textInput.style.left = location.x - labelWidth;
+                this.textInput.style.left = `${location.x - labelWidth}px`;
             // left anchor
             } else {
-                this.textInput.style.left = location.x;
+                this.textInput.style.left = `${location.x}px`;
             }
         // the curve is more vertical at t
         } else {
             // left anchor
             if (horizontalAnchor === 'left') {
-                this.textInput.style.left = location.x;
+                this.textInput.style.left = `${location.x}px`;
             // right anchor
             } else {
-                this.textInput.style.left = location.x - labelWidth;
+                this.textInput.style.left = `${location.x - labelWidth}px`;
             }
             // mid-vertical anchor
             if (Math.abs(deriv.x) < 60) {
                 let dx = deriv.x;
                 if (this.edge.head.y > this.edge.tail.y) dx *= -1;
                 if (horizontalAnchor === 'left') dx *= -1;
-                this.textInput.style.top = location.y - (labelHeight / 2) * (dx / 60 + 1);
+                const topString = `${location.y - (labelHeight / 2) * (dx / 60 + 1)}px`;
+                this.textInput.style.top = topString;
             // top anchor
             } else if ((deriv.x * deriv.y > 0 && horizontalAnchor === 'right') ||
                 (deriv.x * deriv.y <= 0 && horizontalAnchor === 'left')) {
-                this.textInput.style.top = location.y;
+                this.textInput.style.top = `${location.y}px`;
             // bottom anchor
             } else {
-                this.textInput.style.top = location.y - labelHeight;
+                this.textInput.style.top = `${location.y - labelHeight}px`;
             }
         }
     }

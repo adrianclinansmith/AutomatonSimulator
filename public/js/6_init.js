@@ -38,26 +38,37 @@ let edgeWithLabelToEdit = null;
 
 canvas.element.addEventListener('mousedown', function(event) {
     const clickedPt = canvas.eventPointInCanvas(event);
-    let j = null;
     for (let i = 0; i < statesArray.length; i++) {
-        if ((j = statesArray[i].outEdgeLabelContains(clickedPt)) !== null) {
-            edgeWithLabelToEdit = statesArray[i].outEdges[j];
+        const state = statesArray[i];
+        state.outEdgeContains(clickedPt);
+        let edgeIndex = state.outEdgeVertexContains(clickedPt);
+        if (edgeIndex !== null) {
+            edgeWithVertexToDrag = state.outEdges[edgeIndex];
             return;
-        } else if (statesArray[i].contains(clickedPt)) {
-            stateToDrag = statesArray[i];
+        }
+        edgeIndex = state.outEdgeLabelContains(clickedPt);
+        if (edgeIndex !== null) {
+            edgeWithLabelToEdit = state.outEdges[edgeIndex];
             return;
-        } else if ((j = statesArray[i].outEdgeVertexContains(clickedPt)) !== null) {
-            edgeWithVertexToDrag = statesArray[i].outEdges[j];
+        }
+        if (state.contains(clickedPt)) {
+            stateToDrag = state;
             return;
         }
         //
-        if ((j = statesArray[i].outEdgeContains(clickedPt)) !== null) {
-            console.log('CLICKED EDGE!');
-        } else {
-            // console.log('didnt click');
-        }
-        //
+        // if ((j = statesArray[i].outEdgeContains(clickedPt)) !== null) {
+        //     console.log('CLICKED EDGE!');
+        // }
     }
+    if (statesArray[0].outEdges[0].contains(clickedPt)) {
+        console.log('clicked edge');
+    } else {
+        console.log('didnt click');
+    }
+    // const t = Math.round(Math.random() * 100) / 100;
+    // const pt = statesArray[0].outEdges[0].bezier(t);
+    // const [t1, t2] = statesArray[0].outEdges[0].bezierInverse(pt);
+    // console.log(`t: ${t}, t1: ${t1}, t2: ${t2}`);
 });
 
 canvas.element.addEventListener('mouseup', function(event) {

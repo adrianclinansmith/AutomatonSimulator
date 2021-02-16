@@ -4,28 +4,37 @@
 // Edge Class
 // ********************************************************
 
+/*
+An edge that represents a connection between states.
+This is an abstract class and thus must be subclassed.
+*/
+
 // eslint-disable-next-line no-unused-vars
 class Edge extends Curve {
     constructor(head, tail, controlPt = null) {
         super(null, controlPt, null);
         this.head = head;
         this.tail = tail;
+        this.isSelected = false;
     }
 
     draw() {
-        canvas.drawQuadraticCurve(this.startPt, this.controlPt, this.endPt);
-        canvas.drawCircle(this.vertex(), 5, 'red');
-        canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1);
-        canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner2);
-        //
-        const step = 0.1;
-        let color = 'red';
-        for (let t = 0; t <= 1 - step; t += step) {
-            const pt1 = this.bezier(t);
-            const pt2 = this.bezier(t + step);
-            canvas.drawLine(pt1, pt2, color);
-            color = color === 'red' ? 'green' : 'red';
+        const color = this.isSelected ? 'red' : 'black';
+        canvas.drawQuadraticCurve(this.startPt, this.controlPt, this.endPt, color);
+        canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1, color);
+        canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner2, color);
+        if (this.isSelected) {
+            canvas.drawCircle(this.vertex(), 5, color);
         }
+        //
+        // const step = 0.1;
+        // let color = 'red';
+        // for (let t = 0; t <= 1 - step; t += step) {
+        //     const pt1 = this.bezier(t);
+        //     const pt2 = this.bezier(t + step);
+        //     canvas.drawLine(pt1, pt2, color);
+        //     color = color === 'red' ? 'green' : 'red';
+        // }
         //
     }
 

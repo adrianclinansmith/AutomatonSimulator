@@ -40,8 +40,7 @@ class State extends Pt {
     }
 
     contains(pt) {
-        const distance = this.distanceTo(pt);
-        return distance <= this.radius;
+        return this.ptIsWithinRadius(pt, this.radius);
     }
 
     makeOutEdgeTo(tail) {
@@ -56,17 +55,23 @@ class State extends Pt {
     }
 
     outEdgeContains(pt) {
+        let edgeIndex = null;
         for (let i = 0; i < this.outEdges.length; i++) {
-            if (this.outEdges[i].contains(pt)) {
-                return i;
+            const edge = this.outEdges[i];
+            edge.isSelected = false;
+            if (edge.contains(pt)) {
+                edge.isSelected = true;
+                edgeIndex = i;
             }
         }
-        return null;
+        return edgeIndex;
     }
 
     outEdgeVertexContains(pt) {
         for (let i = 0; i < this.outEdges.length; i++) {
-            if (this.outEdges[i].vertexContains(pt)) {
+            const edge = this.outEdges[i];
+            if (edge.vertexContains(pt)) {
+                edge.isSelected = true;
                 return i;
             }
         }

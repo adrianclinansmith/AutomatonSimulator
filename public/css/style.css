@@ -5,17 +5,20 @@ body {
     text-align: center;
 }
 
-div {
-    background-color: pink; 
-    width: 700; 
-    height: 500;
+#CanvasDiv {
+    background-color:#ebe9e9;
+    width: 500;
+    height: 500; 
     position: relative;
     margin: 0 auto;
 }
 
 canvas {
-    background-color: #ebe9e9;
+    background-color: transparent;
+    width: 500;
+    height: 500;
     position: relative;
+    display: block;
     z-index: 1;
 }
 
@@ -25,14 +28,14 @@ adjust text input width: https://stackoverflow.com/questions/3392493
 */
 
 .EdgeLabel {
-    background-color: transparent; 
+    background-color: rgb(235, 220, 220); 
     border: none;
     font-size: 15px;
     text-align: center;
     z-index: 2; 
     position: absolute;  
-    left: 10px; 
-    top: 10px;
+    left: 0px; 
+    top: 0px;
     font-family: Monaco, monospace;
     width: 2ch;
     pointer-events: none;

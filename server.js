@@ -29,11 +29,11 @@ const server = http.createServer((req, res) => {
         } else if (error) {
             res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
             res.end(`Server error: ${error.code}`, 'utf-8');
-        };
+        }
     });
 });
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 server.listen(port, () => {
     console.log(`Server running on port ${port}...\n`);
 });

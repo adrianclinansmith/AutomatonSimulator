@@ -9,10 +9,15 @@ Contains methods to make drawing on the canvas more convenient.
 */
 
 class Canvas {
-    constructor(canvasID = 'canvas', contextType = '2d') {
+    constructor(canvasID = 'canvas', contextType = '2d', containerID = 'CanvasDiv') {
         /** @type {HTMLCanvasElement} */
         this.element = document.getElementById(canvasID);
+        this.container = document.getElementById(containerID);
         this.context = this.element.getContext(contextType);
+        this.element.width = this.container.offsetWidth;
+        this.element.height = this.container.offsetHeight;
+        // this.element.width = 500;
+        // this.element.height = 500;
         this.context.lineWidth = 1.3;
     }
 
