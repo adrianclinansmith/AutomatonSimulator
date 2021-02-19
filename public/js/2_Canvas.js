@@ -10,7 +10,7 @@ Contains methods to make drawing on the canvas more convenient.
 
 // eslint-disable-next-line no-unused-vars
 class Canvas {
-    constructor(canvasID = 'canvas', contextType = '2d', containerID = 'CanvasDiv') {
+    constructor(canvasID, containerID = 'CanvasDiv', contextType = '2d') {
         /** @type {HTMLCanvasElement} */
         this.element = document.getElementById(canvasID);
         this.container = document.getElementById(containerID);
@@ -20,6 +20,13 @@ class Canvas {
         // this.element.width = 500;
         // this.element.height = 500;
         this.context.lineWidth = 1.3;
+    }
+
+    allowsPointerEvents(allow) {
+        if (allow === undefined) {
+            return this.element.style.pointerEvents !== 'none';
+        }
+        this.element.style.pointerEvents = allow ? 'auto' : 'none';
     }
 
     clear() {

@@ -7,17 +7,17 @@ body {
 
 #CanvasDiv {
     background-color:#ebe9e9;
-    width: 500;
-    height: 500; 
+    width: 1000px;
+    height: 700px; 
     position: relative;
     margin: 0 auto;
 }
 
 canvas {
     background-color: transparent;
-    width: 500;
-    height: 500;
-    position: relative;
+    position: absolute;
+    top: 0;
+    left: 0;
     display: block;
     z-index: 1;
 }

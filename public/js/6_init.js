@@ -11,7 +11,9 @@ console.log('Adrian Clinansmith');
 
 /* global State Canvas */
 
-const canvas = new Canvas();
+const staticCanvas = new Canvas('StaticCanvas');
+const dynamicCanvas = new Canvas('DynamicCanvas');
+dynamicCanvas.allowsPointerEvents(false);
 
 const rad = 30;
 const statesArray = [new State(150, 200, rad), new State(350, 200, rad), new State(150, 300, rad),
@@ -25,10 +27,10 @@ statesArray[0].makeOutEdgeTo(statesArray[1]);
 statesArray[0].makeOutEdgeTo(statesArray[0]);
 
 for (let i = 0; i < statesArray.length; i++) {
-    statesArray[i].drawOutEdges(canvas);
+    statesArray[i].drawOutEdges(staticCanvas);
 }
 for (let i = 0; i < statesArray.length; i++) {
-    statesArray[i].draw(canvas);
+    statesArray[i].draw(staticCanvas);
 }
 // ********************************
 // Event Listeners
@@ -38,42 +40,55 @@ let stateToDrag = null;
 let edgeWithVertexToDrag = null;
 let edgeWithLabelToEdit = null;
 
-canvas.element.addEventListener('mousedown', function(event) {
-    const clickedPt = canvas.eventPointInCanvas(event);
+staticCanvas.element.addEventListener('mousedown', function(event) {
+    console.log('mouse down on static canvas');
+    const clickedPt = staticCanvas.eventPointInCanvas(event);
     for (let i = 0; i < statesArray.length; i++) {
         const state = statesArray[i];
-        state.outEdgeContains(clickedPt);
+        // state.outEdgeContains(clickedPt);
         let edgeIndex = state.outEdgeVertexContains(clickedPt);
         if (edgeIndex !== null) {
             edgeWithVertexToDrag = state.outEdges[edgeIndex];
-            return;
+            dynamicCanvas.allowsPointerEvents(true);
+            break;
         }
         edgeIndex = state.outEdgeLabelContains(clickedPt);
         if (edgeIndex !== null) {
             edgeWithLabelToEdit = state.outEdges[edgeIndex];
-            return;
+            break;
         }
         if (state.contains(clickedPt)) {
             stateToDrag = state;
+            dynamicCanvas.allowsPointerEvents(true);
+            break;
+        }
+    }
+    if (!edgeWithVertexToDrag && !stateToDrag) {
+        console.log('\tstatic mouse down return');
+        return;
+    }
+    staticCanvas.clear();
+    // draw all states
+    statesArray.forEach(state => {
+        const canvas = state === stateToDrag ? dynamicCanvas : staticCanvas;
+        state.draw(canvas);
+    });
+    // draw all edges
+    statesArray.forEach(state => {
+        if (state === stateToDrag) {
             return;
         }
-        //
-        // if ((j = statesArray[i].outEdgeContains(clickedPt)) !== null) {
-        //     console.log('CLICKED EDGE!');
-        // }
-    }
-    if (statesArray[0].outEdges[0].contains(clickedPt)) {
-        console.log('clicked edge');
-    } else {
-        console.log('didnt click');
-    }
-    // const t = Math.round(Math.random() * 100) / 100;
-    // const pt = statesArray[0].outEdges[0].bezier(t);
-    // const [t1, t2] = statesArray[0].outEdges[0].bezierInverse(pt);
-    // console.log(`t: ${t}, t1: ${t1}, t2: ${t2}`);
+        state.drawOutEdges(staticCanvas, edge => {
+            return edge.tail !== stateToDrag && edge !== edgeWithVertexToDrag;
+        });
+    });
+    stateToDrag?.drawAllEdges(dynamicCanvas);
+    edgeWithVertexToDrag?.draw(dynamicCanvas);
 });
 
-canvas.element.addEventListener('mouseup', function(event) {
+dynamicCanvas.element.addEventListener('mouseup', function(event) {
+    console.log('mouse up on dynamic canvas');
+    dynamicCanvas.allowsPointerEvents(false);
     stateToDrag = null;
     edgeWithVertexToDrag = null;
     if (edgeWithLabelToEdit !== null) {
@@ -82,27 +97,17 @@ canvas.element.addEventListener('mouseup', function(event) {
     }
 });
 
-canvas.element.addEventListener('mousemove', function(event) {
-    if (stateToDrag === null && edgeWithVertexToDrag === null && edgeWithLabelToEdit === null) {
-        return;
-    }
-    const draggedPt = canvas.eventPointInCanvas(event);
-    if (edgeWithLabelToEdit !== null) {
-        edgeWithLabelToEdit.label.slideLabel(draggedPt);
-        return;
-    }
-    canvas.clear();
+dynamicCanvas.element.addEventListener('mousemove', function(event) {
+    console.log('mouse move on dynamic canvas');
+
+    const draggedPt = dynamicCanvas.eventPointInCanvas(event);
+    dynamicCanvas.clear();
     if (stateToDrag !== null) {
         stateToDrag.setCenter(draggedPt);
+        stateToDrag.draw(dynamicCanvas);
+        stateToDrag.drawAllEdges(dynamicCanvas);
     } else if (edgeWithVertexToDrag !== null) {
         edgeWithVertexToDrag.slideVertex(draggedPt);
-    }
-    // draw all vertices
-    for (let i = 0; i < statesArray.length; i++) {
-        statesArray[i].draw(canvas);
-    }
-    // draw all edges
-    for (let i = 0; i < statesArray.length; i++) {
-        statesArray[i].drawOutEdges(canvas);
+        edgeWithVertexToDrag.draw(dynamicCanvas);
     }
 });

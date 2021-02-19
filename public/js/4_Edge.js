@@ -193,8 +193,6 @@ A concrete subclass of Edge which connects one state to itself.
 class LoopEdge extends Edge {
     constructor(state, controlPt = null) {
         super(state, state);
-        // this.startPt = new Pt(state.x - state.radius / 2, state.y);
-        // this.endPt = new Pt(state.x + state.radius / 2, state.y);
         if (controlPt === null) {
             this.controlPt = new Pt(state.x, state.y - state.radius * 4);
         } else {
@@ -203,7 +201,6 @@ class LoopEdge extends Edge {
         this.calculateEndpoints(0);
         this.setArrowhead();
         this.setOffset();
-        // this.setupLabel();
         this.label = new EdgeLabel(this);
     }
 

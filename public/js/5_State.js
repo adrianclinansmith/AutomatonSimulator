@@ -22,15 +22,34 @@ class State extends Pt {
         canvas.drawCircle(this, this.radius, this.colour);
     }
 
-    drawOutEdges(canvas) {
+    drawAllEdges(canvas) {
         for (let i = 0; i < this.outEdges.length; i++) {
             this.outEdges[i].draw(canvas);
+        }
+        for (let i = 0; i < this.inEdges.length; i++) {
+            const inEdge = this.inEdges[i];
+            if (inEdge.head !== inEdge.tail) {
+                inEdge.draw(canvas);
+            }
+        }
+    }
+
+    drawOutEdges(canvas, predicate) {
+        for (let i = 0; i < this.outEdges.length; i++) {
+            const edge = this.outEdges[i];
+            if (predicate === undefined || predicate(edge)) {
+                edge.draw(canvas);
+            }
         }
     }
 
     focusOutEdgeLabel(outEdgeIndex) {
         const outEdge = this.outEdges[outEdgeIndex];
         outEdge.label.textInput.focus();
+    }
+
+    hasEdge(edge) {
+        return this.outEdges.includes(edge) || this.inEdges.includes(edge);
     }
 
     makeOutEdgeTo(tail) {
