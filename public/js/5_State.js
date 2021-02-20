@@ -64,22 +64,22 @@ class State extends Pt {
     }
 
     outEdgeContains(pt) {
-        let edgeIndex = null;
+        let index = null;
         for (let i = 0; i < this.outEdges.length; i++) {
             const edge = this.outEdges[i];
             edge.isSelected = false;
             if (edge.contains(pt)) {
                 edge.isSelected = true;
-                edgeIndex = i;
+                index = i;
             }
         }
-        return edgeIndex;
+        return index !== null ? this.outEdges[index] : null;
     }
 
     outEdgeLabelContains(pt) {
         for (let i = 0; i < this.outEdges.length; i++) {
             if (this.outEdges[i].label.labelContains(pt)) {
-                return i;
+                return this.outEdges[i];
             }
         }
         return null;
@@ -90,7 +90,7 @@ class State extends Pt {
             const edge = this.outEdges[i];
             if (edge.vertexContains(pt)) {
                 edge.isSelected = true;
-                return i;
+                return this.outEdges[i];
             }
         }
         return null;
