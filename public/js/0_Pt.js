@@ -13,6 +13,8 @@ class Pt {
         this.y = y;
     }
 
+    /* Instance methods */
+
     addPt(addendPt) {
         return new Pt(this.x + addendPt.x, this.y + addendPt.y);
     }
@@ -58,5 +60,14 @@ class Pt {
 
     toString() {
         return `(${this.x}, ${this.y})`;
+    }
+
+    /* Static methods */
+
+    static mouseEventPtInElement(event, element) {
+        const rect = element.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+        return new Pt(x, y);
     }
 }

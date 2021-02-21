@@ -22,13 +22,6 @@ class Canvas {
         this.context.lineWidth = 1.3;
     }
 
-    allowsPointerEvents(allow) {
-        if (allow === undefined) {
-            return this.element.style.pointerEvents !== 'none';
-        }
-        this.element.style.pointerEvents = allow ? 'auto' : 'none';
-    }
-
     clear() {
         const width = this.element.width;
         const height = this.element.height;
@@ -66,13 +59,6 @@ class Canvas {
         this.context.font = '10px serif';
         this.context.textAlign = 'center';
         this.context.fillText(text, atPt.x, atPt.y);
-    }
-
-    eventPointInCanvas(event) {
-        const rect = this.element.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
-        return new Pt(x, y);
     }
 
     linearBezier(t, p0, p1) {
