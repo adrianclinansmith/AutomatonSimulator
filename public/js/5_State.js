@@ -15,7 +15,7 @@ class State extends Pt {
     }
 
     contains(pt) {
-        return this.ptIsWithinRadius(pt, this.radius);
+        return this.ptIsWithinRadius(pt, this.radius) ? this : false;
     }
 
     draw(canvas) {
@@ -73,7 +73,7 @@ class State extends Pt {
                 index = i;
             }
         }
-        return index !== null ? this.outEdges[index] : null;
+        return index !== null ? this.outEdges[index] : false;
     }
 
     outEdgeLabelContains(pt) {
@@ -82,7 +82,7 @@ class State extends Pt {
                 return this.outEdges[i];
             }
         }
-        return null;
+        return false;
     }
 
     outEdgeVertexContains(pt) {
@@ -93,7 +93,7 @@ class State extends Pt {
                 return this.outEdges[i];
             }
         }
-        return null;
+        return false;
     }
 
     setCenter(pt) {

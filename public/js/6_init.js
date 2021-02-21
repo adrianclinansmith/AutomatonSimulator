@@ -9,7 +9,7 @@ console.log('Adrian Clinansmith');
 // Initialize Graph
 // ********************************
 
-/* global Pt Canvas State */
+/* global Pt Canvas Edge State */
 
 const staticCanvas = new Canvas('StaticCanvas');
 const dynamicCanvas = new Canvas('DynamicCanvas');
@@ -36,43 +36,44 @@ for (let i = 0; i < statesArray.length; i++) {
 // Event Listeners
 // ********************************
 
-let stateToDrag = null;
-let edgeWithVertexToDrag = null;
-let edgeWithLabelToEdit = null;
 let clickedSomething = false;
+let clickedLabel = false;
 
 canvasDiv.addEventListener('mousedown', event => {
     const clickedPt = Pt.mouseEventPtInElement(event, canvasDiv);
     for (const state of statesArray) {
         // state.outEdgeContains(clickedPt);
         clickedSomething =
-        (edgeWithVertexToDrag = state.outEdgeVertexContains(clickedPt)) ||
-        (edgeWithLabelToEdit = state.outEdgeLabelContains(clickedPt)) ||
-        (stateToDrag = state.contains(clickedPt) ? state : null);
+            state.outEdgeVertexContains(clickedPt) ||
+            (clickedLabel = state.outEdgeLabelContains(clickedPt)) ||
+            state.contains(clickedPt);
         if (clickedSomething) {
             break;
         }
     }
-    if (!edgeWithVertexToDrag && !stateToDrag) {
+    if (!clickedSomething || clickedLabel) {
         return;
     }
     staticCanvas.clear();
     // draw all states
     for (const state of statesArray) {
-        const canvas = state === stateToDrag ? dynamicCanvas : staticCanvas;
+        const canvas = state === clickedSomething ? dynamicCanvas : staticCanvas;
         state.draw(canvas);
     }
     // draw all edges
     for (const state of statesArray) {
-        if (state === stateToDrag) {
+        if (state === clickedSomething) {
             continue;
         }
         state.drawOutEdges(staticCanvas, edge => {
-            return edge.tail !== stateToDrag && edge !== edgeWithVertexToDrag;
+            return ![edge, edge.tail].includes(clickedSomething);
         });
     }
-    stateToDrag?.drawAllEdges(dynamicCanvas);
-    edgeWithVertexToDrag?.draw(dynamicCanvas);
+    if (clickedSomething instanceof State) {
+        clickedSomething.drawAllEdges(dynamicCanvas);
+    } else {
+        clickedSomething.draw(dynamicCanvas);
+    }
 });
 
 canvasDiv.addEventListener('mousemove', event => {
@@ -80,27 +81,25 @@ canvasDiv.addEventListener('mousemove', event => {
         return;
     }
     const draggedPt = Pt.mouseEventPtInElement(event, canvasDiv);
-    if (edgeWithLabelToEdit) {
-        edgeWithLabelToEdit.label.slideLabel(draggedPt);
+    if (clickedLabel) {
+        clickedSomething.label.slideLabel(draggedPt);
         return;
     }
     dynamicCanvas.clear();
-    if (edgeWithVertexToDrag) {
-        edgeWithVertexToDrag.slideVertex(draggedPt);
-        edgeWithVertexToDrag.draw(dynamicCanvas);
-    } else if (stateToDrag) {
-        stateToDrag.setCenter(draggedPt);
-        stateToDrag.draw(dynamicCanvas);
-        stateToDrag.drawAllEdges(dynamicCanvas);
+    if (clickedSomething instanceof Edge) {
+        clickedSomething.slideVertex(draggedPt);
+        clickedSomething.draw(dynamicCanvas);
+    } else if (clickedSomething instanceof State) {
+        clickedSomething.setCenter(draggedPt);
+        clickedSomething.draw(dynamicCanvas);
+        clickedSomething.drawAllEdges(dynamicCanvas);
     }
 });
 
 canvasDiv.addEventListener('mouseup', event => {
-    if (edgeWithLabelToEdit) {
-        edgeWithLabelToEdit.label.textInput.focus();
-        edgeWithLabelToEdit = null;
+    if (clickedLabel) {
+        clickedSomething.label.textInput.focus();
+        clickedLabel = false;
     }
-    stateToDrag = null;
-    edgeWithVertexToDrag = null;
     clickedSomething = false;
 });
