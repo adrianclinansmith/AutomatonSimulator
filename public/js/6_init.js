@@ -9,7 +9,7 @@ console.log('Adrian Clinansmith');
 // Initialize Graph
 // ********************************
 
-/* global Pt Canvas Edge State */
+/* global Pt Canvas EdgeLabel Edge State */
 
 const staticCanvas = new Canvas('StaticCanvas');
 const dynamicCanvas = new Canvas('DynamicCanvas');
@@ -37,7 +37,6 @@ for (let i = 0; i < statesArray.length; i++) {
 // ********************************
 
 let clickedSomething = false;
-let clickedLabel = false;
 
 canvasDiv.addEventListener('mousedown', event => {
     const clickedPt = Pt.mouseEventPtInElement(event, canvasDiv);
@@ -45,13 +44,13 @@ canvasDiv.addEventListener('mousedown', event => {
         // state.outEdgeContains(clickedPt);
         clickedSomething =
             state.outEdgeVertexContains(clickedPt) ||
-            (clickedLabel = state.outEdgeLabelContains(clickedPt)) ||
+            state.outEdgeLabelContains(clickedPt) ||
             state.contains(clickedPt);
         if (clickedSomething) {
             break;
         }
     }
-    if (!clickedSomething || clickedLabel) {
+    if (!clickedSomething || clickedSomething instanceof EdgeLabel) {
         return;
     }
     staticCanvas.clear();
@@ -81,8 +80,8 @@ canvasDiv.addEventListener('mousemove', event => {
         return;
     }
     const draggedPt = Pt.mouseEventPtInElement(event, canvasDiv);
-    if (clickedLabel) {
-        clickedSomething.label.slideLabel(draggedPt);
+    if (clickedSomething instanceof EdgeLabel) {
+        clickedSomething.slideLabel(draggedPt);
         return;
     }
     dynamicCanvas.clear();
@@ -97,9 +96,8 @@ canvasDiv.addEventListener('mousemove', event => {
 });
 
 canvasDiv.addEventListener('mouseup', event => {
-    if (clickedLabel) {
-        clickedSomething.label.textInput.focus();
-        clickedLabel = false;
+    if (clickedSomething instanceof EdgeLabel) {
+        clickedSomething.textInput.focus();
     }
     clickedSomething = false;
 });

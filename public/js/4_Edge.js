@@ -99,7 +99,6 @@ class NonLoopEdge extends Edge {
         this.setArrowhead();
         this.controlDistanceFromMid = 0;
         this.controlIsForward = true;
-        // this.setupLabel();
         this.label = new EdgeLabel(this);
     }
 
