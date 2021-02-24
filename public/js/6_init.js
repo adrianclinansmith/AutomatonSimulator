@@ -36,68 +36,72 @@ for (let i = 0; i < statesArray.length; i++) {
 // Event Listeners
 // ********************************
 
-let clickedSomething = false;
+let selected = false;
+let lastSelected = false;
 
 canvasDiv.addEventListener('mousedown', event => {
-    const clickedPt = Pt.mouseEventPtInElement(event, canvasDiv);
+    const mousePt = Pt.mouseEventPtInElement(event, canvasDiv);
     for (const state of statesArray) {
         // state.outEdgeContains(clickedPt);
-        clickedSomething =
-            state.outEdgeVertexContains(clickedPt) ||
-            state.outEdgeLabelContains(clickedPt) ||
-            state.contains(clickedPt);
-        if (clickedSomething) {
+        selected = state.contains(mousePt) || state.outEdgeContains(mousePt);
+        if (selected) {
             break;
         }
     }
-    if (!clickedSomething || clickedSomething instanceof EdgeLabel) {
+    if (selected === lastSelected) {
         return;
     }
     staticCanvas.clear();
+    dynamicCanvas.clear();
     // draw all states
     for (const state of statesArray) {
-        const canvas = state === clickedSomething ? dynamicCanvas : staticCanvas;
-        state.draw(canvas);
+        if (state === selected) {
+            state.draw(dynamicCanvas, 'red');
+        } else {
+            state.draw(staticCanvas);
+        }
     }
     // draw all edges
     for (const state of statesArray) {
-        if (state === clickedSomething) {
-            continue;
+        if (state !== selected) {
+            state.drawOutEdges(staticCanvas, edge => {
+                return ![edge, edge.tail].includes(selected);
+            });
         }
-        state.drawOutEdges(staticCanvas, edge => {
-            return ![edge, edge.tail].includes(clickedSomething);
-        });
     }
-    if (clickedSomething instanceof State) {
-        clickedSomething.drawAllEdges(dynamicCanvas);
-    } else {
-        clickedSomething.draw(dynamicCanvas);
+    if (selected instanceof State) {
+        selected.drawAllEdges(dynamicCanvas, false, 'red');
+    } else if (selected instanceof Edge) {
+        selected.draw(dynamicCanvas, true, 'red');
     }
 });
 
 canvasDiv.addEventListener('mousemove', event => {
-    if (!clickedSomething) {
+    if (!selected || (selected instanceof Edge && !selected.onVertex)) {
         return;
     }
-    const draggedPt = Pt.mouseEventPtInElement(event, canvasDiv);
-    if (clickedSomething instanceof EdgeLabel) {
-        clickedSomething.slideLabel(draggedPt);
+    const mousePt = Pt.mouseEventPtInElement(event, canvasDiv);
+    if (selected instanceof EdgeLabel) {
+        selected.slideLabel(mousePt);
         return;
     }
     dynamicCanvas.clear();
-    if (clickedSomething instanceof Edge) {
-        clickedSomething.slideVertex(draggedPt);
-        clickedSomething.draw(dynamicCanvas);
-    } else if (clickedSomething instanceof State) {
-        clickedSomething.setCenter(draggedPt);
-        clickedSomething.draw(dynamicCanvas);
-        clickedSomething.drawAllEdges(dynamicCanvas);
+    if (selected instanceof Edge) {
+        selected.slideVertex(mousePt);
+        selected.draw(dynamicCanvas, true, 'red');
+    } else if (selected instanceof State) {
+        selected.setCenter(mousePt);
+        selected.draw(dynamicCanvas, 'red');
+        selected.drawAllEdges(dynamicCanvas, false, 'red');
     }
 });
 
 canvasDiv.addEventListener('mouseup', event => {
-    if (clickedSomething instanceof EdgeLabel) {
-        clickedSomething.textInput.focus();
+    if (selected instanceof EdgeLabel) {
+        selected.textInput.focus();
+    } else if (selected instanceof Edge) {
+        selected.onVertex = false;
     }
-    clickedSomething = false;
+    lastSelected = selected;
+    selected = false;
 });

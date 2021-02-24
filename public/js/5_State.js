@@ -18,8 +18,8 @@ class State extends Pt {
         return this.ptIsWithinRadius(pt, this.radius) ? this : false;
     }
 
-    draw(canvas) {
-        canvas.drawCircle(this, this.radius, this.colour);
+    draw(canvas, colour = this.colour) {
+        canvas.drawCircle(this, this.radius, colour);
     }
 
     drawAllEdges(canvas) {
@@ -64,36 +64,16 @@ class State extends Pt {
     }
 
     outEdgeContains(pt) {
-        let index = null;
-        for (let i = 0; i < this.outEdges.length; i++) {
-            const edge = this.outEdges[i];
-            edge.isSelected = false;
-            if (edge.contains(pt)) {
-                edge.isSelected = true;
-                index = i;
-            }
-        }
-        return index !== null ? this.outEdges[index] : false;
-    }
-
-    outEdgeLabelContains(pt) {
-        for (let i = 0; i < this.outEdges.length; i++) {
-            if (this.outEdges[i].label.labelContains(pt)) {
-                return this.outEdges[i].label;
-            }
-        }
-        return false;
-    }
-
-    outEdgeVertexContains(pt) {
-        for (let i = 0; i < this.outEdges.length; i++) {
-            const edge = this.outEdges[i];
+        for (const edge of this.outEdges) {
             if (edge.vertexContains(pt)) {
-                edge.isSelected = true;
-                return this.outEdges[i];
+                edge.onVertex = true;
+                return edge;
+            } else if (edge.contains(pt)) {
+                return edge;
+            } else if (edge.labelContains(pt)) {
+                return edge.label;
             }
         }
-        return false;
     }
 
     setCenter(pt) {

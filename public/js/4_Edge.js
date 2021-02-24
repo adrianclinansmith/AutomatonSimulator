@@ -18,7 +18,8 @@ class Edge extends Curve {
         super(null, controlPt, null);
         this.head = head;
         this.tail = tail;
-        this.isSelected = false;
+        this.onVertex = false;
+        // this.isSelected = false;
     }
 
     calculateEndpoints(head = this.head, tail = this.tail) {
@@ -40,12 +41,12 @@ class Edge extends Curve {
         this.startPt = curve.bezier(1 - t);
     }
 
-    draw(canvas) {
-        const color = this.isSelected ? 'red' : 'black';
+    draw(canvas, shouldDrawVertex, color = 'black') {
+        // const color = this.isSelected ? 'red' : 'black';
         canvas.drawQuadraticCurve(this.startPt, this.controlPt, this.endPt, color);
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1, color);
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner2, color);
-        if (this.isSelected) {
+        if (shouldDrawVertex) {
             canvas.drawCircle(this.vertex(), 5, color);
         }
     }
