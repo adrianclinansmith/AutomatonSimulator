@@ -15,16 +15,20 @@ class Pt {
 
     /* Instance methods */
 
-    addPt(addendPt) {
-        return new Pt(this.x + addendPt.x, this.y + addendPt.y);
+    addPt(addendPt, multiplier = 1) {
+        const x = (this.x + addendPt.x) * multiplier;
+        const y = (this.y + addendPt.y) * multiplier;
+        return new Pt(x, y);
     }
 
     distanceTo(otherPt) {
         return Math.hypot(this.x - otherPt.x, this.y - otherPt.y);
     }
 
-    minusPt(subtrahendPt) {
-        return new Pt(this.x - subtrahendPt.x, this.y - subtrahendPt.y);
+    minusPt(subtrahendPt, multiplier = 1) {
+        const x = (this.x - subtrahendPt.x) * multiplier;
+        const y = (this.y - subtrahendPt.y) * multiplier;
+        return new Pt(x, y);
     }
 
     // A linear function f(x) that passes through this point and which has a

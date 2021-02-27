@@ -19,9 +19,9 @@ class Edge extends Curve {
         this.head = head;
         this.tail = tail;
         this.onVertex = false;
-        // this.isSelected = false;
     }
 
+    // The endpoints are where the curve meets the rims of the head & tail.
     calculateEndpoints(head = this.head, tail = this.tail) {
         const curve = new Curve(head, this.controlPt, tail);
         const incrementsArray = [0.001, 0.005, 0.01, 0.05];
@@ -104,16 +104,14 @@ class NonLoopEdge extends Edge {
     }
 
     // The axis of symmetry is a linear function that is perpendicular to
-    // a straight line contecting the head and tail.
+    // the line between the head and tail. Here it's in point-slope form.
     axisOfSymmetry(x, inverse = false) {
-        const h = this.head;
-        const t = this.tail;
-        const slope = (h.x - t.x) / (t.y - h.y);
-        const mid = new Pt((h.x + t.x) / 2, (h.y + t.y) / 2);
+        const slope = -1 / this.head.slopeTo(this.tail);
+        const midPt = this.startPt.addPt(this.endPt, 0.5);
         if (inverse) {
-            return (x - mid.y) / slope + mid.x;
+            return (x - midPt.y) / slope + midPt.x;
         }
-        return slope * (x - mid.x) + mid.y;
+        return slope * (x - midPt.x) + midPt.y;
     }
 
     axisOfSymmetrySlope() {
@@ -122,12 +120,8 @@ class NonLoopEdge extends Edge {
         return rise / run;
     }
 
-    midBase() {
-        const x = (this.startPt.x + this.endPt.x) / 2;
-        const y = (this.startPt.y + this.endPt.y) / 2;
-        return new Pt(x, y);
-    }
-
+    // If the head or tail has moved then an endpoint has moved also,
+    // so the curve must be recalculated.
     readjustForChangedEndpoint() {
         const head = this.head;
         const tail = this.tail;
@@ -137,43 +131,40 @@ class NonLoopEdge extends Edge {
         if ((controlIsForward && tailIsAboveHead) || !(controlIsForward || tailIsAboveHead)) {
             controlDistanceFromMid = -1 * controlDistanceFromMid;
         }
-        const midBase = this.midBase();
+        const midPt = this.startPt.addPt(this.endPt, 0.5);
         const m = this.axisOfSymmetrySlope();
         if (Number.isFinite(m)) {
-            this.controlPt = midBase.ptAlongSlope(m, controlDistanceFromMid);
+            this.controlPt = midPt.ptAlongSlope(m, controlDistanceFromMid);
         } else {
-            this.controlPt = new Pt(midBase.x, midBase.y + controlDistanceFromMid);
+            this.controlPt = new Pt(midPt.x, midPt.y + controlDistanceFromMid);
         }
         this.calculateEndpoints();
         this.setArrowhead();
         this.label.readjustLabel();
     }
 
+    // The vertex must slide along the curve's axis of symmetry.
     slideVertex(pt) {
+        const slope = this.axisOfSymmetrySlope();
+        const vertex = new Pt();
+        vertex.x = Math.abs(slope) < 1 ? pt.x : this.axisOfSymmetry(pt.y, true);
+        vertex.y = Math.abs(slope) < 1 ? this.axisOfSymmetry(pt.x) : pt.y;
+        const midPt = this.startPt.addPt(this.endPt, 0.5);
+        const vertexHeight = vertex.distanceTo(midPt);
+        const c1 = midPt.ptAlongSlope(slope, vertexHeight * 2);
+        const c2 = midPt.ptAlongSlope(slope, vertexHeight * -2);
+        this.controlPt = vertex.distanceTo(c1) < vertex.distanceTo(c2) ? c1 : c2;
+        this.controlDistanceFromMid = vertexHeight * 2;
         const head = this.head;
         const tail = this.tail;
-        const slope = this.axisOfSymmetrySlope();
-        const newVertex = new Pt();
-        newVertex.x = Math.abs(slope) < 1 ? pt.x : this.axisOfSymmetry(pt.y, true);
-        newVertex.y = Math.abs(slope) < 1 ? this.axisOfSymmetry(pt.x) : pt.y;
-        const midBase = this.midBase();
-        const newHeight = newVertex.distanceTo(midBase);
-        const maybeControl1 = midBase.ptAlongSlope(slope, newHeight * 2);
-        const maybeControl2 = midBase.ptAlongSlope(slope, newHeight * -2);
-        if (newVertex.distanceTo(maybeControl1) < newVertex.distanceTo(maybeControl2)) {
-            this.controlPt = maybeControl1;
-        } else {
-            this.controlPt = maybeControl2;
-        }
-        this.controlDistanceFromMid = newHeight * 2;
         if (head.y < tail.y) {
-            this.controlIsForward = this.controlPt.x >= midBase.x;
+            this.controlIsForward = this.controlPt.x >= midPt.x;
         } else if (head.y === tail.y && head.x > tail.x) {
-            this.controlIsForward = this.controlPt.y >= midBase.y;
+            this.controlIsForward = this.controlPt.y >= midPt.y;
         } else if (head.y === tail.y && head.x < tail.x) {
-            this.controlIsForward = this.controlPt.y < midBase.y;
+            this.controlIsForward = this.controlPt.y < midPt.y;
         } else {
-            this.controlIsForward = this.controlPt.x <= midBase.x;
+            this.controlIsForward = this.controlPt.x <= midPt.x;
         }
         this.calculateEndpoints();
         this.setArrowhead();
@@ -204,19 +195,20 @@ class LoopEdge extends Edge {
         this.label = new EdgeLabel(this);
     }
 
+    // There is only one state in a self-loop, so the endpoints are cacluated from
+    // the ends of a line segment (with slope) that's centered at the state's center.
     calculateEndpoints(slope) {
         const state = this.head;
-        let p0, p1;
+        const p0 = state.ptAlongSlope(slope, -1 * state.radius / 2);
+        const p1 = state.ptAlongSlope(slope, state.radius / 2);
         if (this.controlPt.y < state.y) {
-            p0 = state.ptAlongSlope(slope, -1 * state.radius / 2);
-            p1 = state.ptAlongSlope(slope, state.radius / 2);
+            super.calculateEndpoints(p0, p1);
         } else {
-            p0 = state.ptAlongSlope(slope, state.radius / 2);
-            p1 = state.ptAlongSlope(slope, -1 * state.radius / 2);
+            super.calculateEndpoints(p1, p0);
         }
-        super.calculateEndpoints(p0, p1);
     }
 
+    // If the state has moved then the endpoints have moved also.
     readjustForChangedEndpoint() {
         this.startPt = this.head.addPt(this.stateOffset.startPt);
         this.endPt = this.head.addPt(this.stateOffset.endPt);

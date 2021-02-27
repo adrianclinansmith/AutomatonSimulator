@@ -35,7 +35,6 @@ class Curve {
         return new Pt(x, y);
     }
 
-    // TEMP: may not use
     bezierInverse(pt, useX = true) {
         const p0 = this.endPt;
         const p1 = this.controlPt;
@@ -66,25 +65,6 @@ class Curve {
         return ptAtT.ptIsWithinRadius(pt, radius);
     }
 
-    // contains(pt) {
-    //     const step = 0.1;
-    //     const precision = 7;
-    //     for (let t = 0; t <= 1 - step; t += step) {
-    //         const srtPt = this.bezier(t);
-    //         const endPt = this.bezier(t + step);
-    //         const x1 = (srtPt.x < endPt.x ? srtPt.x : endPt.x) - precision;
-    //         const x2 = (x1 === srtPt.x ? endPt.x : srtPt.x) + precision;
-    //         const y1 = (srtPt.y < endPt.y ? srtPt.y : endPt.y) - precision;
-    //         const y2 = (y1 === srtPt.y ? endPt.y : srtPt.y) + precision;
-    //         // console.log(`pt1: ${new Pt(x1, y1)}, pt2: ${new Pt(x2, y2)}, pt: ${pt}`);
-    //         if (pt.x >= x1 && pt.x <= x2 && pt.y >= y1 && pt.y <= y2) {
-    //             return true;
-    //         }
-    //     }
-    //     return false;
-    // }
-
-    // TEMP: may not use
     isValidBezierT(t) {
         return !isNaN(t) && t !== null && t >= 0 && t <= 1;
     }

@@ -19,6 +19,8 @@ const rad = 30;
 const statesArray = [new State(150, 200, rad), new State(350, 200, rad),
     new State(150, 300, rad), new State(450, 200, rad), new State(250, 300, rad)];
 statesArray[0].makeOutEdgeTo(statesArray[1]);
+statesArray[0].makeOutEdgeTo(statesArray[2]);
+statesArray[3].makeOutEdgeTo(statesArray[0]);
 statesArray[0].makeOutEdgeTo(statesArray[0]);
 
 for (let i = 0; i < statesArray.length; i++) {
@@ -33,28 +35,36 @@ for (let i = 0; i < statesArray.length; i++) {
 // ********************************
 
 let selected = false;
-let lastSelected = false;
+let mouseIsDown = false;
 
 canvasDiv.addEventListener('mousedown', event => {
+    mouseIsDown = true;
     const mousePt = Pt.mouseEventPtInElement(event, canvasDiv);
-    for (const state of statesArray.reverse()) {
-        // state.outEdgeContains(clickedPt);
-        selected = state.contains(mousePt) || state.outEdgeContains(mousePt);
-        if (selected) {
+    let toSelect = false;
+    let i;
+    for (i = statesArray.length - 1; i >= 0; i--) {
+        const state = statesArray[i];
+        toSelect = state.contains(mousePt) || state.outEdgeContains(mousePt);
+        if (toSelect) {
             break;
         }
     }
-    if (selected !== lastSelected) {
-        redrawAll();
+    if (toSelect === selected) {
+        return;
     }
+    if (toSelect instanceof State) {
+        statesArray.splice(i, 1);
+        statesArray.push(toSelect);
+    }
+    selected = toSelect;
+    redrawAll();
 });
 
 canvasDiv.addEventListener('mousemove', event => {
-    if (!selected || (selected instanceof Edge && !selected.onVertex)) {
+    if (!mouseIsDown || (selected instanceof Edge && !selected.onVertex)) {
         return;
     }
     const mousePt = Pt.mouseEventPtInElement(event, canvasDiv);
-    console.log('mousemove: ' + mousePt);
     if (selected instanceof EdgeLabel) {
         selected.slideLabel(mousePt);
         return;
@@ -71,13 +81,12 @@ canvasDiv.addEventListener('mousemove', event => {
 });
 
 canvasDiv.addEventListener('mouseup', event => {
+    mouseIsDown = false;
     if (selected instanceof EdgeLabel) {
         selected.textInput.focus();
     } else if (selected instanceof Edge) {
         selected.onVertex = false;
     }
-    lastSelected = selected;
-    selected = false;
 });
 
 // ********************************
@@ -87,8 +96,8 @@ canvasDiv.addEventListener('mouseup', event => {
 const newStateButton = document.getElementById('NewStateButton');
 
 newStateButton.addEventListener('click', () => {
-    const x = rad + 20 + Math.random() * 20;
-    const y = canvasDiv.offsetHeight - x - Math.random() * 20;
+    const x = rad + 20 + Math.random() * 10;
+    const y = canvasDiv.offsetHeight - x - Math.random() * 10;
     statesArray.push(new State(x, y, rad));
     redrawAll();
 });
