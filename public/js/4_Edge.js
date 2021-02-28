@@ -27,7 +27,9 @@ class Edge extends Curve {
         const incrementsArray = [0.001, 0.005, 0.01, 0.05];
         let increment = incrementsArray.pop();
         let t = 0;
+        // let iterations = 0;
         while (increment && t < 0.5) {
+            // iterations++;
             const pt = curve.bezier(t);
             if (this.tail.contains(pt)) {
                 t += increment;
@@ -37,12 +39,12 @@ class Edge extends Curve {
                 t += increment || 0;
             }
         }
+        // console.log('itertions: ' + iterations);
         this.endPt = curve.bezier(t);
         this.startPt = curve.bezier(1 - t);
     }
 
     draw(canvas, shouldDrawVertex, color = 'black') {
-        // const color = this.isSelected ? 'red' : 'black';
         canvas.drawQuadraticCurve(this.startPt, this.controlPt, this.endPt, color);
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1, color);
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner2, color);

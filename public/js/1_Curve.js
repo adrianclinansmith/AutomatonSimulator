@@ -35,37 +35,48 @@ class Curve {
         return new Pt(x, y);
     }
 
-    bezierInverse(pt, useX = true) {
+    bezierInverse(pt) {
         const p0 = this.endPt;
         const p1 = this.controlPt;
         const p2 = this.startPt;
-        const a = p0.x - 2 * p1.x + p2.x;
-        const b = 2 * (p1.x - p0.x);
-        const c = (p0.x - pt.x);
-        let t1;
+        const ts = [];
+        let a = p0.x - 2 * p1.x + p2.x;
+        let b = 2 * (p1.x - p0.x);
+        let c = (p0.x - pt.x);
         if (a === 0) {
-            t1 = (pt.x - p0.x) / (p2.x - p0.x);
+            ts.push((pt.x - p0.x) / (p2.x - p0.x), Infinity);
         } else {
-            t1 = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+            ts.push(...this.quadraticFormula(a, b, c));
         }
-        const t2 = (-b - Math.sqrt(b * b - 4 * a * c)) / (2 * a);
-        return [t1, t2];
+        a = p0.y - 2 * p1.y + p2.y;
+        b = 2 * (p1.y - p0.y);
+        c = (p0.y - pt.y);
+        if (a === 0) {
+            ts.push((pt.y - p0.y) / (p2.y - p0.y), Infinity);
+        } else {
+            ts.push(...this.quadraticFormula(a, b, c));
+        }
+        return ts;
     }
 
     contains(pt) {
-        const [t1, t2] = this.bezierInverse(pt);
-        return this.isPtAtT(pt, t1) || this.isPtAtT(pt, t2);
-    }
-
-    isPtAtT(pt, t, radius = 5) {
-        if (!this.isValidBezierT(t)) {
-            return false;
+        const ts = this.bezierInverse(pt);
+        console.log(ts);
+        for (const t of ts) {
+            if (isNaN(t) || t > 1 || t < 0) {
+                continue;
+            }
+            const ptAtT = this.bezier(t);
+            if (ptAtT.ptIsWithinRadius(pt, 5)) {
+                return true;
+            }
         }
-        const ptAtT = this.bezier(t);
-        return ptAtT.ptIsWithinRadius(pt, radius);
+        return false;
     }
 
-    isValidBezierT(t) {
-        return !isNaN(t) && t !== null && t >= 0 && t <= 1;
+    quadraticFormula(a, b, c) {
+        const x1 = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+        const x2 = (-b - Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+        return [x1, x2];
     }
 }
