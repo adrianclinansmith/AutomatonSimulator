@@ -53,9 +53,9 @@ class Pt {
         return new Pt(x, y);
     }
 
-    ptIsWithinRadius(otherPt, radius) {
+    contains(otherPt, radius) {
         const distance = this.distanceTo(otherPt);
-        return distance <= radius;
+        return distance <= radius ? this : false;
     }
 
     slopeTo(otherPt) {

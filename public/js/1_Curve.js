@@ -61,13 +61,12 @@ class Curve {
 
     contains(pt) {
         const ts = this.bezierInverse(pt);
-        console.log(ts);
         for (const t of ts) {
             if (isNaN(t) || t > 1 || t < 0) {
                 continue;
             }
             const ptAtT = this.bezier(t);
-            if (ptAtT.ptIsWithinRadius(pt, 5)) {
+            if (ptAtT.contains(pt, 5)) {
                 return true;
             }
         }

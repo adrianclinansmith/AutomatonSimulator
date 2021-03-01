@@ -15,21 +15,21 @@ class State extends Pt {
     }
 
     contains(pt) {
-        return this.ptIsWithinRadius(pt, this.radius) ? this : false;
+        return super.contains(pt, this.radius);
     }
 
     draw(canvas, colour = this.colour) {
         canvas.drawCircle(this, this.radius, colour);
     }
 
-    drawAllEdges(canvas) {
+    drawAllEdges(canvas, shouldDrawVertex, color = 'black') {
         for (let i = 0; i < this.outEdges.length; i++) {
-            this.outEdges[i].draw(canvas);
+            this.outEdges[i].draw(canvas, shouldDrawVertex, 'red');
         }
         for (let i = 0; i < this.inEdges.length; i++) {
             const inEdge = this.inEdges[i];
             if (inEdge.head !== inEdge.tail) {
-                inEdge.draw(canvas);
+                inEdge.draw(canvas, shouldDrawVertex, 'red');
             }
         }
     }
@@ -41,15 +41,6 @@ class State extends Pt {
                 edge.draw(canvas);
             }
         }
-    }
-
-    focusOutEdgeLabel(outEdgeIndex) {
-        const outEdge = this.outEdges[outEdgeIndex];
-        outEdge.label.textInput.focus();
-    }
-
-    hasEdge(edge) {
-        return this.outEdges.includes(edge) || this.inEdges.includes(edge);
     }
 
     makeOutEdgeTo(tail) {
@@ -74,6 +65,7 @@ class State extends Pt {
                 return edge.label;
             }
         }
+        return false;
     }
 
     setCenter(pt) {
@@ -85,9 +77,5 @@ class State extends Pt {
         for (let i = 0; i < this.inEdges.length; i++) {
             this.inEdges[i].readjustForChangedEndpoint();
         }
-    }
-
-    slideOutEdgeVertex(pt, index) {
-        this.outEdges[index].slideVertex(pt);
     }
 }

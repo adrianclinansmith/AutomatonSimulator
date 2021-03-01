@@ -15,11 +15,13 @@ class Canvas {
         this.element = document.getElementById(canvasID);
         this.container = document.getElementById(containerID);
         this.context = this.element.getContext(contextType);
-        this.element.width = this.container.offsetWidth;
-        this.element.height = this.container.offsetHeight;
-        // this.element.width = 500;
-        // this.element.height = 500;
-        this.context.lineWidth = 1.3;
+        // src: https://www.kirupa.com/canvas/canvas_high_dpi_retina.htm
+        this.element.width = this.container.offsetWidth * devicePixelRatio;
+        this.element.height = this.container.offsetHeight * devicePixelRatio;
+        this.context.scale(devicePixelRatio, devicePixelRatio);
+        this.element.style.width = this.container.offsetWidth + 'px';
+        this.element.style.height = this.container.offsetHeight + 'px';
+        this.context.lineWidth = 1.5;
     }
 
     clear() {

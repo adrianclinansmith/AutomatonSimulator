@@ -24,10 +24,10 @@ statesArray[3].makeOutEdgeTo(statesArray[0]);
 statesArray[0].makeOutEdgeTo(statesArray[0]);
 
 for (let i = 0; i < statesArray.length; i++) {
-    statesArray[i].drawOutEdges(staticCanvas);
+    statesArray[i].draw(staticCanvas);
 }
 for (let i = 0; i < statesArray.length; i++) {
-    statesArray[i].draw(staticCanvas);
+    statesArray[i].drawOutEdges(staticCanvas);
 }
 
 // ********************************
@@ -38,8 +38,8 @@ let selected = false;
 let mouseIsDown = false;
 
 canvasDiv.addEventListener('mousedown', event => {
-    mouseIsDown = true;
     const mousePt = Pt.mouseEventPtInElement(event, canvasDiv);
+    mouseIsDown = true;
     let toSelect = false;
     let i;
     for (i = statesArray.length - 1; i >= 0; i--) {
@@ -52,12 +52,14 @@ canvasDiv.addEventListener('mousedown', event => {
     if (toSelect === selected) {
         return;
     }
-    if (toSelect instanceof State) {
-        statesArray.splice(i, 1);
-        statesArray.push(toSelect);
-    }
     selected = toSelect;
-    redrawAll();
+    if (selected instanceof State) {
+        statesArray.splice(i, 1);
+        statesArray.push(selected);
+    }
+    if (!(toSelect instanceof EdgeLabel)) {
+        redrawAll();
+    }
 });
 
 canvasDiv.addEventListener('mousemove', event => {
@@ -76,7 +78,7 @@ canvasDiv.addEventListener('mousemove', event => {
     } else if (selected instanceof State) {
         selected.setCenter(mousePt);
         selected.draw(dynamicCanvas, 'red');
-        selected.drawAllEdges(dynamicCanvas);
+        selected.drawAllEdges(dynamicCanvas, true, 'red');
     }
 });
 
@@ -94,12 +96,20 @@ canvasDiv.addEventListener('mouseup', event => {
 // ********************************
 
 const newStateButton = document.getElementById('NewStateButton');
+const newEdgeButton = document.getElementById('NewEdgeButton');
 
 newStateButton.addEventListener('click', () => {
     const x = rad + 20 + Math.random() * 10;
     const y = canvasDiv.offsetHeight - x - Math.random() * 10;
     statesArray.push(new State(x, y, rad));
     redrawAll();
+});
+
+newEdgeButton.addEventListener('click', () => {
+    const cursor = canvasDiv.style.cursor;
+    const borderStyle = newEdgeButton.style.borderStyle;
+    canvasDiv.style.cursor = cursor === '' ? 'w-resize' : '';
+    newEdgeButton.style.borderStyle = borderStyle === '' ? 'inset' : '';
 });
 
 // ********************************
@@ -127,7 +137,7 @@ function redrawAll() {
         });
     }
     if (selected instanceof State) {
-        selected.drawAllEdges(dynamicCanvas);
+        selected.drawAllEdges(dynamicCanvas, true, 'red');
     } else if (selected instanceof Edge) {
         selected.draw(dynamicCanvas, true, 'red');
     }
