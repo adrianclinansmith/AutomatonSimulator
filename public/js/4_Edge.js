@@ -44,7 +44,7 @@ class Edge extends Curve {
         this.startPt = curve.bezier(1 - t);
     }
 
-    draw(canvas, shouldDrawVertex, color = 'black') {
+    draw(canvas, color = 'black', shouldDrawVertex = false) {
         canvas.drawQuadraticCurve(this.startPt, this.controlPt, this.endPt, color);
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1, color);
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner2, color);

@@ -22,6 +22,8 @@ class Canvas {
         this.element.style.width = this.container.offsetWidth + 'px';
         this.element.style.height = this.container.offsetHeight + 'px';
         this.context.lineWidth = 1.5;
+
+        this.strokeStyle = 'black';
     }
 
     clear() {
@@ -30,7 +32,7 @@ class Canvas {
         this.context.clearRect(0, 0, width, height);
     }
 
-    drawCircle(centerPt, radius, colour = 'black') {
+    drawCircle(centerPt, radius, colour = this.strokeStyle) {
         this.context.beginPath();
         this.context.arc(centerPt.x, centerPt.y, radius, 0, 2 * Math.PI);
         this.context.fillStyle = '#ebe9e9';
@@ -39,7 +41,7 @@ class Canvas {
         this.context.stroke();
     }
 
-    drawLine(pt0, pt1, colour = 'black') {
+    drawLine(pt0, pt1, colour = this.strokeStyle) {
         this.context.beginPath();
         this.context.moveTo(pt0.x, pt0.y);
         const p2 = new Pt((pt0.x + pt1.x) / 2, (pt0.y + pt1.y) / 2);
@@ -48,10 +50,10 @@ class Canvas {
         this.context.stroke();
     }
 
-    drawQuadraticCurve(beginPt, controlPt, endPt, colour = 'black') {
+    drawQuadraticCurve(beginPt, ctrlPt, endPt, colour = this.strokeStyle) {
         this.context.beginPath();
         this.context.moveTo(beginPt.x, beginPt.y);
-        this.context.quadraticCurveTo(controlPt.x, controlPt.y, endPt.x, endPt.y);
+        this.context.quadraticCurveTo(ctrlPt.x, ctrlPt.y, endPt.x, endPt.y);
         this.context.strokeStyle = colour;
         this.context.stroke();
     }
@@ -67,6 +69,10 @@ class Canvas {
         const x = (1 - t) * p0.x + t * p1.x;
         const y = (1 - t) * p0.y + t * p1.y;
         return new Pt(x, y);
+    }
+
+    setStrokeStyle(strokeStyle) {
+        this.strokeStyle = strokeStyle;
     }
 }
 // const canvas = new Canvas();
