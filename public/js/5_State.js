@@ -43,12 +43,14 @@ class State extends Pt {
         }
     }
 
-    makeOutEdgeTo(tail) {
+    makeOutEdgeTo(tail, edge = null) {
         let newEdge;
-        if (tail !== this) {
+        if (!edge && tail !== this) {
             newEdge = new NonLoopEdge(this, tail);
-        } else {
+        } else if (!edge) {
             newEdge = new LoopEdge(this);
+        } else {
+            newEdge = edge;
         }
         this.outEdges.push(newEdge);
         tail.inEdges.push(newEdge);

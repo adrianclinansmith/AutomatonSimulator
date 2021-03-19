@@ -42,9 +42,12 @@ class Edge extends Curve {
         // console.log('itertions: ' + iterations);
         this.endPt = curve.bezier(t);
         this.startPt = curve.bezier(1 - t);
+        console.log(`startPt: ${this.startPt}, endPt: ${this.endPt}`);
     }
 
     draw(canvas, color = 'black', shouldDrawVertex = false) {
+        // canvas.drawCircle(this.startPt, 5, 'green');
+        // canvas.drawCircle(this.endPt, 5, 'green');
         canvas.drawQuadraticCurve(this.startPt, this.controlPt, this.endPt, color);
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1, color);
         canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner2, color);
@@ -94,7 +97,7 @@ class NonLoopEdge extends Edge {
     constructor(head, tail, controlPt = null) {
         super(head, tail);
         if (controlPt === null) {
-            this.controlPt = new Pt((head.x + tail.x) / 2, (head.y + tail.y) / 2);
+            this.controlPt = head.addPt(tail, 0.5);
         } else {
             this.controlPt = controlPt;
         }
@@ -108,7 +111,7 @@ class NonLoopEdge extends Edge {
     // The axis of symmetry is a linear function that is perpendicular to
     // the line between the head and tail. Here it's in point-slope form.
     axisOfSymmetry(x, inverse = false) {
-        const slope = -1 / this.head.slopeTo(this.tail);
+        const slope = this.axisOfSymmetrySlope();
         const midPt = this.startPt.addPt(this.endPt, 0.5);
         if (inverse) {
             return (x - midPt.y) / slope + midPt.x;
@@ -117,9 +120,7 @@ class NonLoopEdge extends Edge {
     }
 
     axisOfSymmetrySlope() {
-        const rise = this.axisOfSymmetry(500) - this.axisOfSymmetry(5);
-        const run = 500 - 5;
-        return rise / run;
+        return -1 / this.head.slopeTo(this.tail);
     }
 
     // If the head or tail has moved then an endpoint has moved also,
@@ -188,17 +189,20 @@ class LoopEdge extends Edge {
         super(state, state);
         if (controlPt === null) {
             this.controlPt = new Pt(state.x, state.y - state.radius * 4);
+            this.calculateEndpoints(0);
         } else {
             this.controlPt = controlPt;
+            console.log(`control: ${controlPt}, state: ${state}, slope: ${controlPt.slopeTo(state)}`);
+            this.calculateEndpoints(-1 / controlPt.slopeTo(state));
         }
-        this.calculateEndpoints(0);
         this.setArrowhead();
-        this.setOffset();
+        this.setOffsets();
         this.label = new EdgeLabel(this);
     }
 
-    // There is only one state in a self-loop, so the endpoints are cacluated from
-    // the ends of a line segment (with slope) that's centered at the state's center.
+    // There is only one state in a self-loop, so the endpoints are cacluated
+    // from the ends of a line segment with the given slope that's centered at
+    // the state's center.
     calculateEndpoints(slope) {
         const state = this.head;
         const p0 = state.ptAlongSlope(slope, -1 * state.radius / 2);
@@ -210,7 +214,7 @@ class LoopEdge extends Edge {
         }
     }
 
-    // If the state has moved then the endpoints have moved also.
+    // If the state has moved then the endpoints have to move with it.
     readjustForChangedEndpoint() {
         this.startPt = this.head.addPt(this.stateOffset.startPt);
         this.endPt = this.head.addPt(this.stateOffset.endPt);
@@ -219,7 +223,8 @@ class LoopEdge extends Edge {
         this.label.readjustLabel();
     }
 
-    setOffset() {
+    // The start, end, & control's offsets from the state's center.
+    setOffsets() {
         const startPt = this.startPt.minusPt(this.head);
         const endPt = this.endPt.minusPt(this.head);
         const controlPt = this.controlPt.minusPt(this.head);
@@ -232,14 +237,10 @@ class LoopEdge extends Edge {
         const m = newVertexPt.slopeTo(state);
         const maybeControl1 = newVertexPt.ptAlongSlope(m, -1 * distance);
         const maybeControl2 = newVertexPt.ptAlongSlope(m, distance);
-        if (state.distanceTo(maybeControl1) > state.distanceTo(maybeControl2)) {
-            this.controlPt = maybeControl1;
-        } else {
-            this.controlPt = maybeControl2;
-        }
+        this.controlPt = state.farthestFrom(maybeControl1, maybeControl2);
         this.calculateEndpoints(-1 / m);
         this.setArrowhead();
-        this.setOffset();
+        this.setOffsets();
         this.label.readjustLabel();
     }
 }

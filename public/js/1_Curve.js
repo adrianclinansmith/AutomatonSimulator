@@ -73,6 +73,10 @@ class Curve {
         return false;
     }
 
+    draw(canvas, colour = 'black') {
+        canvas.drawQuadraticCurve(this.startPt, this.controlPt, this.endPt, colour);
+    }
+
     quadraticFormula(a, b, c) {
         const x1 = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
         const x2 = (-b - Math.sqrt(b * b - 4 * a * c)) / (2 * a);
