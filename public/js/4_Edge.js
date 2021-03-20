@@ -57,7 +57,7 @@ class Edge extends Curve {
     }
 
     labelContains(pt) {
-        return this.label.labelContains(pt);
+        return this.label?.labelContains(pt);
     }
 
     setArrowhead() {
@@ -94,7 +94,7 @@ A concrete subclass of Edge which connects two different states.
 
 // eslint-disable-next-line no-unused-vars
 class NonLoopEdge extends Edge {
-    constructor(head, tail, controlPt = null) {
+    constructor(head, tail, controlPt = null, hasLabel = true) {
         super(head, tail);
         if (controlPt === null) {
             this.controlPt = head.addPt(tail, 0.5);
@@ -105,7 +105,9 @@ class NonLoopEdge extends Edge {
         this.setArrowhead();
         this.controlDistanceFromMid = 0;
         this.controlIsForward = true;
-        this.label = new EdgeLabel(this);
+        if (hasLabel) {
+            this.label = new EdgeLabel(this);
+        }
     }
 
     // The axis of symmetry is a linear function that is perpendicular to
@@ -143,7 +145,7 @@ class NonLoopEdge extends Edge {
         }
         this.calculateEndpoints();
         this.setArrowhead();
-        this.label.readjustLabel();
+        this.label?.readjustLabel();
     }
 
     // The vertex must slide along the curve's axis of symmetry.
@@ -171,7 +173,7 @@ class NonLoopEdge extends Edge {
         }
         this.calculateEndpoints();
         this.setArrowhead();
-        this.label.readjustLabel();
+        this.label?.readjustLabel();
     }
 }
 
@@ -185,19 +187,20 @@ A concrete subclass of Edge which connects one state to itself.
 
 // eslint-disable-next-line no-unused-vars
 class LoopEdge extends Edge {
-    constructor(state, controlPt = null) {
+    constructor(state, controlPt = null, hasLabel = true) {
         super(state, state);
         if (controlPt === null) {
             this.controlPt = new Pt(state.x, state.y - state.radius * 4);
             this.calculateEndpoints(0);
         } else {
             this.controlPt = controlPt;
-            console.log(`control: ${controlPt}, state: ${state}, slope: ${controlPt.slopeTo(state)}`);
             this.calculateEndpoints(-1 / controlPt.slopeTo(state));
         }
         this.setArrowhead();
         this.setOffsets();
-        this.label = new EdgeLabel(this);
+        if (hasLabel) {
+            this.label = new EdgeLabel(this);
+        }
     }
 
     // There is only one state in a self-loop, so the endpoints are cacluated
@@ -220,7 +223,7 @@ class LoopEdge extends Edge {
         this.endPt = this.head.addPt(this.stateOffset.endPt);
         this.controlPt = this.head.addPt(this.stateOffset.controlPt);
         this.setArrowhead();
-        this.label.readjustLabel();
+        this.label?.readjustLabel();
     }
 
     // The start, end, & control's offsets from the state's center.
@@ -235,12 +238,12 @@ class LoopEdge extends Edge {
         const state = this.head;
         const distance = newVertexPt.distanceTo(state) - state.radius;
         const m = newVertexPt.slopeTo(state);
-        const maybeControl1 = newVertexPt.ptAlongSlope(m, -1 * distance);
-        const maybeControl2 = newVertexPt.ptAlongSlope(m, distance);
-        this.controlPt = state.farthestFrom(maybeControl1, maybeControl2);
+        const c1 = newVertexPt.ptAlongSlope(m, -1 * distance);
+        const c2 = newVertexPt.ptAlongSlope(m, distance);
+        this.controlPt = state.farthestFrom(c1, c2);
         this.calculateEndpoints(-1 / m);
         this.setArrowhead();
         this.setOffsets();
-        this.label.readjustLabel();
+        this.label?.readjustLabel();
     }
 }

@@ -39,26 +39,22 @@ class Graph {
         canvas.clear();
         let curveToDraw;
         if (!fromState.contains(toPtOrState)) {
-            curveToDraw = new NonLoopEdge(fromState, toPtOrState);
-            curveToDraw.draw(canvas, 'red');
+            curveToDraw = new NonLoopEdge(fromState, toPtOrState, null, false);
+            curveToDraw.draw(canvas, colour);
         }
         if (toPtOrState instanceof State) {
             toPtOrState.draw(canvas, colour);
         } else if (fromState.contains(toPtOrState)) {
             const m = fromState.slopeTo(toPtOrState);
             const distance = fromState.radius / 2;
-            // const startPt = fromState.ptAlongSlope(-1 / m, -1 * distance);
-            // const endPt = fromState.ptAlongSlope(-1 / m, distance);
             let d = 1;
             if (toPtOrState.x < fromState.x ||
                 (toPtOrState.x === fromState.x && toPtOrState.y < fromState.y)) {
                 d = -1;
             }
             const controlPt = fromState.ptAlongSlope(m, distance * 10 * d);
-            // curveToDraw = new Curve(startPt, controlPt, endPt);
-            curveToDraw = new LoopEdge(fromState, controlPt);
-            curveToDraw.draw(canvas, 'red');
-            // curveToDraw.controlPt = fromState.ptAlongSlope(m, distance * 8 * d);
+            curveToDraw = new LoopEdge(fromState, controlPt, false);
+            curveToDraw.draw(canvas, colour);
         }
         fromState.draw(canvas, colour);
         fromState.drawAllEdges(canvas, colour, true);

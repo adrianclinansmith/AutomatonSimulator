@@ -67,6 +67,7 @@ canvasDiv.addEventListener('mousemove', event => {
         let endPt = selectedTail || mousePt;
         endPt = (endPt === selected) ? mousePt : endPt;
         newEdge = graph.drawConnection(dynamicCanvas, selected, endPt, 'red');
+        newEdge.hasLabel = false;
         return;
     }
     graph.move(selected, mousePt);
@@ -83,9 +84,11 @@ canvasDiv.addEventListener('mouseup', event => {
         selected.onVertex = false;
     } else if (selected instanceof State && selectedTail) {
         selected.makeOutEdgeTo(selectedTail, newEdge);
-        newEdge.label.textInput.focus();
+        newEdge.label = new EdgeLabel(newEdge);
         dynamicCanvas.clear();
-        selectedTail.draw(staticCanvas);
+        if (selectedTail !== selected) {
+            selectedTail.draw(staticCanvas);
+        }
         selected.draw(dynamicCanvas, 'red');
         selected.drawAllEdges(dynamicCanvas, true, 'red');
     } else if (selected instanceof State && inEdgeMode) {
