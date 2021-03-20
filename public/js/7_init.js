@@ -35,7 +35,6 @@ graph.draw(staticCanvas);
 // Canvas Div Event Listeners
 // ********************************
 
-let inEdgeMode = false;
 let mouseIsDown = false;
 let selected = false;
 let selectedTail = false;
@@ -62,7 +61,7 @@ canvasDiv.addEventListener('mousemove', event => {
     }
     const mousePt = Pt.mouseEventPtInElement(event, canvasDiv);
 
-    if (inEdgeMode && selected instanceof State) {
+    if (newEdgeButton.isPressed && selected instanceof State) {
         selectedTail = graph.stateContains(mousePt);
         let endPt = selectedTail || mousePt;
         endPt = (endPt === selected) ? mousePt : endPt;
@@ -92,7 +91,7 @@ canvasDiv.addEventListener('mouseup', event => {
         }
         selected.draw(dynamicCanvas, 'red');
         selected.drawAllEdges(dynamicCanvas, true, 'red');
-    } else if (selected instanceof State && inEdgeMode) {
+    } else if (selected instanceof State && newEdgeButton.isPressed) {
         dynamicCanvas.clear();
         selected.draw(dynamicCanvas, 'red');
         selected.drawAllEdges(dynamicCanvas, true, 'red');
@@ -105,22 +104,32 @@ canvasDiv.addEventListener('mouseup', event => {
 // ********************************
 
 const newStateButton = document.getElementById('NewStateButton');
+newStateButton.angle = Math.PI / -2;
+
 const newEdgeButton = document.getElementById('NewEdgeButton');
+newEdgeButton.isPressed = false;
 
 newStateButton.addEventListener('click', () => {
-    const x = rad + 20 + Math.random() * 10;
-    const y = canvasDiv.offsetHeight - x - Math.random() * 10;
+    const angle = newStateButton.angle;
+    const pi = Math.PI;
+    const x = canvasDiv.offsetWidth / 2 + rad * Math.cos(angle);
+    const y = canvasDiv.offsetHeight - rad * (2 + Math.sin(angle)) - 5;
     graph.add(new State(x, y, rad));
     graph.draw(staticCanvas, selected);
+    newStateButton.angle += pi / 2;
+    if (Math.abs(newStateButton.angle - 3 * pi / 2) < 0.01) {
+        newStateButton.angle = pi / -4;
+    } else if (Math.abs(newStateButton.angle - 7 * pi / 4) < 0.01) {
+        newStateButton.angle = pi / -2;
+    }
 });
 
 newEdgeButton.addEventListener('click', () => {
-    if (!inEdgeMode) {
-        inEdgeMode = true;
+    newEdgeButton.isPressed = !newEdgeButton.isPressed;
+    if (newEdgeButton.isPressed) {
         canvasDiv.style.cursor = 'w-resize';
         newEdgeButton.style.borderStyle = 'inset';
     } else {
-        inEdgeMode = false;
         selectedTail = false;
         canvasDiv.style.cursor = '';
         newEdgeButton.style.borderStyle = '';
