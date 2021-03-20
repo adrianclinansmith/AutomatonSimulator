@@ -10,9 +10,12 @@ class EdgeLabel {
         const textInput = document.createElement('input');
         textInput.setAttribute('type', 'text');
         textInput.setAttribute('class', 'EdgeLabel');
+        const thisLabel = this;
         textInput.oninput = function() {
-            const textWidth = textInput.value.length;
-            textInput.style.width = (textWidth + 1) + 'ch';
+            console.log('oninput');
+            const textWidth = textInput.value.length || 1;
+            textInput.style.width = textWidth + 'ch';
+            thisLabel.readjustLabel();
         };
         this.textInput = textInput;
         this.bezierT = 0.5;
@@ -21,6 +24,14 @@ class EdgeLabel {
         this.edge = edge;
         document.getElementById('CanvasDiv').appendChild(textInput);
         this.readjustLabel();
+    }
+
+    focusIfNotEmpty() {
+        console.log('in focusifnotempty');
+        if (this.textInput.value.length !== 0) {
+            console.log('should focus');
+            this.textInput.focus();
+        }
     }
 
     labelContains(pt) {
@@ -97,6 +108,9 @@ class EdgeLabel {
     }
 
     slideLabel(pt) {
+        if (this.textInput.value.length === 0) {
+            return;
+        }
         let t = this.bezierT;
         const forwardDistance = pt.distanceTo(this.edge.bezier(t + 0.001));
         const backwardDistance = pt.distanceTo(this.edge.bezier(t - 0.001));

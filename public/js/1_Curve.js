@@ -75,11 +75,29 @@ class Curve {
 
     draw(canvas, colour = 'black') {
         canvas.drawQuadraticCurve(this.startPt, this.controlPt, this.endPt, colour);
+        if (this.arrowhead) {
+            canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1, colour);
+            canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner2, colour);
+        }
     }
 
     quadraticFormula(a, b, c) {
         const x1 = (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a);
         const x2 = (-b - Math.sqrt(b * b - 4 * a * c)) / (2 * a);
         return [x1, x2];
+    }
+
+    setArrowhead() {
+        const tip = this.endPt;
+        const ptForSlope = this.bezier(0.01);
+        // src: http://www.dbp-consulting.com/tutorials/canvas/CanvasArrow.html
+        const angle = Math.atan2(ptForSlope.y - tip.y, ptForSlope.x - tip.x);
+        const theta = Math.PI / 4;
+        const angle1 = Math.PI + angle + theta;
+        const angle2 = Math.PI + angle - theta;
+        const h = Math.abs(7 / Math.cos(theta));
+        const corner1 = new Pt(tip.x - Math.cos(angle1) * h, tip.y - Math.sin(angle1) * h);
+        const corner2 = new Pt(tip.x - Math.cos(angle2) * h, tip.y - Math.sin(angle2) * h);
+        this.arrowhead = { tip, corner1, corner2 };
     }
 }

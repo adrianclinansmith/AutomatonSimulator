@@ -29,7 +29,8 @@ adjust text input width: https://stackoverflow.com/questions/3392493
 */
 
 .EdgeLabel {
-    background-color: rgb(235, 220, 220); 
+    background-color: transparent;
+    /* background-color: rgb(235, 220, 220);  */
     border: none;
     font-size: 15px;
     text-align: center;
@@ -38,6 +39,6 @@ adjust text input width: https://stackoverflow.com/questions/3392493
     left: 0px; 
     top: 0px;
     font-family: Monaco, monospace;
-    width: 2ch;
+    width: 1ch;
     pointer-events: none;
 }

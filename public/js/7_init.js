@@ -49,7 +49,7 @@ canvasDiv.addEventListener('mousedown', event => {
         return;
     }
     selected = toSelect;
-    if (!(toSelect instanceof EdgeLabel)) {
+    if (!(selected instanceof EdgeLabel)) {
         graph.draw(staticCanvas, selected);
         graph.drawElement(selected, dynamicCanvas, 'red', true);
     }
@@ -79,8 +79,9 @@ canvasDiv.addEventListener('mousemove', event => {
 canvasDiv.addEventListener('mouseup', event => {
     mouseIsDown = false;
     if (selected instanceof EdgeLabel) {
-        selected.textInput.focus();
+        selected.focusIfNotEmpty();
     } else if (selected instanceof Edge) {
+        selected.label.textInput.focus();
         selected.onVertex = false;
     } else if (selected instanceof State && selectedTail) {
         selected.makeOutEdgeTo(selectedTail, newEdge);

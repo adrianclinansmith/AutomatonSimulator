@@ -45,33 +45,15 @@ class Edge extends Curve {
         console.log(`startPt: ${this.startPt}, endPt: ${this.endPt}`);
     }
 
-    draw(canvas, color = 'black', shouldDrawVertex = false) {
-        // canvas.drawCircle(this.startPt, 5, 'green');
-        // canvas.drawCircle(this.endPt, 5, 'green');
-        canvas.drawQuadraticCurve(this.startPt, this.controlPt, this.endPt, color);
-        canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner1, color);
-        canvas.drawLine(this.arrowhead.tip, this.arrowhead.corner2, color);
+    draw(canvas, colour = 'black', shouldDrawVertex = false) {
+        super.draw(canvas, colour);
         if (shouldDrawVertex) {
-            canvas.drawCircle(this.vertex(), 5, color);
+            canvas.drawCircle(this.vertex(), 5, colour);
         }
     }
 
     labelContains(pt) {
         return this.label?.labelContains(pt);
-    }
-
-    setArrowhead() {
-        const tip = this.endPt;
-        const ptForSlope = this.bezier(0.01);
-        // src: http://www.dbp-consulting.com/tutorials/canvas/CanvasArrow.html
-        const angle = Math.atan2(ptForSlope.y - tip.y, ptForSlope.x - tip.x);
-        const theta = Math.PI / 4;
-        const angle1 = Math.PI + angle + theta;
-        const angle2 = Math.PI + angle - theta;
-        const h = Math.abs(7 / Math.cos(theta));
-        const corner1 = new Pt(tip.x - Math.cos(angle1) * h, tip.y - Math.sin(angle1) * h);
-        const corner2 = new Pt(tip.x - Math.cos(angle2) * h, tip.y - Math.sin(angle2) * h);
-        this.arrowhead = { tip, corner1, corner2 };
     }
 
     vertex() {
@@ -101,8 +83,7 @@ class NonLoopEdge extends Edge {
         } else {
             this.controlPt = controlPt;
         }
-        this.calculateEndpoints();
-        this.setArrowhead();
+        this.calculateEndspointsArrowAndLabel();
         this.controlDistanceFromMid = 0;
         this.controlIsForward = true;
         if (hasLabel) {
@@ -133,19 +114,14 @@ class NonLoopEdge extends Edge {
         const controlIsForward = this.controlIsForward;
         let controlDistanceFromMid = this.controlDistanceFromMid;
         const tailIsAboveHead = head.y > tail.y || (head.y === tail.y && head.x < tail.x);
-        if ((controlIsForward && tailIsAboveHead) || !(controlIsForward || tailIsAboveHead)) {
-            controlDistanceFromMid = -1 * controlDistanceFromMid;
+        if ((controlIsForward && tailIsAboveHead) ||
+            !(controlIsForward || tailIsAboveHead)) {
+            controlDistanceFromMid *= -1;
         }
         const midPt = this.startPt.addPt(this.endPt, 0.5);
         const m = this.axisOfSymmetrySlope();
-        if (Number.isFinite(m)) {
-            this.controlPt = midPt.ptAlongSlope(m, controlDistanceFromMid);
-        } else {
-            this.controlPt = new Pt(midPt.x, midPt.y + controlDistanceFromMid);
-        }
-        this.calculateEndpoints();
-        this.setArrowhead();
-        this.label?.readjustLabel();
+        this.controlPt = midPt.ptAlongSlope(m, controlDistanceFromMid);
+        this.calculateEndspointsArrowAndLabel();
     }
 
     // The vertex must slide along the curve's axis of symmetry.
@@ -158,7 +134,7 @@ class NonLoopEdge extends Edge {
         const vertexHeight = vertex.distanceTo(midPt);
         const c1 = midPt.ptAlongSlope(slope, vertexHeight * 2);
         const c2 = midPt.ptAlongSlope(slope, vertexHeight * -2);
-        this.controlPt = vertex.distanceTo(c1) < vertex.distanceTo(c2) ? c1 : c2;
+        this.controlPt = vertex.closestTo(c1, c2);
         this.controlDistanceFromMid = vertexHeight * 2;
         const head = this.head;
         const tail = this.tail;
@@ -171,6 +147,10 @@ class NonLoopEdge extends Edge {
         } else {
             this.controlIsForward = this.controlPt.x <= midPt.x;
         }
+        this.calculateEndspointsArrowAndLabel();
+    }
+
+    calculateEndspointsArrowAndLabel() {
         this.calculateEndpoints();
         this.setArrowhead();
         this.label?.readjustLabel();
