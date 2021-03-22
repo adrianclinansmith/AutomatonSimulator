@@ -3,13 +3,11 @@
     Setup the canvas for drawing digraphs.
 */
 
-console.log('Adrian Clinansmith');
-
 // ********************************
 // Initialize Graph
 // ********************************
 
-/* global Pt Canvas EdgeLabel Edge Graph State */
+/* global Pt Canvas EdgeLabel Edge LoopEdge NonLoopEdge Graph State */
 
 const canvasDiv = document.getElementById('CanvasDiv');
 const staticCanvas = new Canvas('StaticCanvas');
@@ -19,21 +17,16 @@ const graph = new Graph();
 
 const rad = 30;
 
-graph.add(new State(150, 200, rad));
-graph.add(new State(350, 200, rad));
-graph.add(new State(150, 300, rad));
-graph.add(new State(450, 200, rad));
-graph.add(new State(250, 300, rad));
-
+graph.add(new State(canvasDiv.offsetWidth / 2 - rad * 4, 400, rad));
+graph.add(new State(canvasDiv.offsetWidth / 2 + rad * 4, 400, rad));
 graph.states[0].makeOutEdgeTo(graph.states[1]);
-graph.states[0].makeOutEdgeTo(graph.states[0]);
-graph.states[1].makeOutEdgeTo(graph.states[2]);
+graph.states[0].outEdges[0].label = new EdgeLabel(graph.states[0].outEdges[0]);
 
 graph.draw(staticCanvas);
 
-// ********************************
+// ****************************************************************
 // Canvas Div Event Listeners
-// ********************************
+// ****************************************************************
 
 let mouseIsDown = false;
 let selected = false;
@@ -55,53 +48,88 @@ canvasDiv.addEventListener('mousedown', event => {
 });
 
 canvasDiv.addEventListener('mousemove', event => {
-    if (!mouseIsDown || !selected ||
-         (selected instanceof Edge && !selected.onVertex)) {
+    if (!mouseIsDown || !selected) {
         return;
     }
+    event.preventDefault();
+    event.stopPropagation();
     const mousePt = Pt.mouseEventPtInElement(event, canvasDiv);
 
-    if (newEdgeButton.isPressed && selected instanceof State) {
-        selectedTail = graph.stateContains(mousePt);
-        let endPt = selectedTail || mousePt;
-        endPt = (endPt === selected) ? mousePt : endPt;
-        newEdge = graph.drawConnection(dynamicCanvas, selected, endPt, 'red');
-        newEdge.hasLabel = false;
-        return;
-    }
-    graph.move(selected, mousePt);
-    if (!(selected instanceof EdgeLabel)) {
-        graph.drawElement(selected, dynamicCanvas, 'red', true);
+    if (selected instanceof EdgeLabel) {
+        selected.slideLabel(mousePt);
+    } else if (selected instanceof Edge) {
+        handleMouseMoveOnEdge(mousePt);
+    } else if (selected instanceof State) {
+        handleMouseMoveOnState(mousePt);
     }
 });
 
 canvasDiv.addEventListener('mouseup', event => {
     mouseIsDown = false;
+    event.preventDefault();
+    event.stopPropagation();
     if (selected instanceof EdgeLabel) {
         selected.focusIfNotEmpty();
     } else if (selected instanceof Edge) {
         selected.label.textInput.focus();
         selected.onVertex = false;
-    } else if (selected instanceof State && selectedTail) {
-        selected.makeOutEdgeTo(selectedTail, newEdge);
-        newEdge.label = new EdgeLabel(newEdge);
-        dynamicCanvas.clear();
-        if (selectedTail !== selected) {
-            selectedTail.draw(staticCanvas);
-        }
-        selected.draw(dynamicCanvas, 'red');
-        selected.drawAllEdges(dynamicCanvas, true, 'red');
-    } else if (selected instanceof State && newEdgeButton.isPressed) {
-        dynamicCanvas.clear();
-        selected.draw(dynamicCanvas, 'red');
-        selected.drawAllEdges(dynamicCanvas, true, 'red');
+    } else if (selected instanceof State) {
+        handleMouseUpOnState();
     }
     selectedTail = false;
 });
 
-// ********************************
+// ****************************************************************
+// Graph Element MouseEvent Handlers
+// ****************************************************************
+
+function handleMouseMoveOnEdge(mousePt) {
+    if (!selected.onVertex) {
+        return;
+    }
+    selected.slideVertex(mousePt);
+    dynamicCanvas.clear();
+    selected.draw(dynamicCanvas, 'red', true);
+}
+
+function handleMouseMoveOnState(mousePt) {
+    dynamicCanvas.clear();
+    if (!newEdgeButton.isPressed) {
+        selected.setCenter(mousePt);
+        selected.drawWithEdges(dynamicCanvas, 'red', true);
+        return;
+    }
+    selectedTail = graph.stateContains(mousePt);
+    if (!selectedTail) {
+        newEdge = new NonLoopEdge(selected, mousePt);
+    } else if (selected !== selectedTail) {
+        newEdge = new NonLoopEdge(selected, selectedTail);
+        selectedTail.draw(dynamicCanvas, 'red');
+    } else {
+        const m = selected.slopeTo(mousePt);
+        const c1 = selected.ptAlongSlope(m, selected.radius * 3);
+        const c2 = selected.ptAlongSlope(m, selected.radius * -3);
+        newEdge = new LoopEdge(selected, mousePt.closestTo(c1, c2));
+    }
+    newEdge.draw(dynamicCanvas, 'red');
+    selected.drawWithEdges(dynamicCanvas, 'red', true);
+}
+
+function handleMouseUpOnState() {
+    if (!newEdgeButton.isPressed) {
+        return;
+    }
+    if (selectedTail) {
+        selected.makeOutEdgeTo(selectedTail, newEdge);
+        newEdge.label = new EdgeLabel(newEdge);
+    }
+    dynamicCanvas.clear();
+    selected.drawWithEdges(dynamicCanvas, 'red', true);
+}
+
+// ****************************************************************
 // Button Event Listeners
-// ********************************
+// ****************************************************************
 
 const newStateButton = document.getElementById('NewStateButton');
 newStateButton.angle = Math.PI / -2;

@@ -76,7 +76,7 @@ A concrete subclass of Edge which connects two different states.
 
 // eslint-disable-next-line no-unused-vars
 class NonLoopEdge extends Edge {
-    constructor(head, tail, controlPt = null, hasLabel = true) {
+    constructor(head, tail, controlPt = null, hasLabel = false) {
         super(head, tail);
         if (controlPt === null) {
             this.controlPt = head.addPt(tail, 0.5);
@@ -167,7 +167,7 @@ A concrete subclass of Edge which connects one state to itself.
 
 // eslint-disable-next-line no-unused-vars
 class LoopEdge extends Edge {
-    constructor(state, controlPt = null, hasLabel = true) {
+    constructor(state, controlPt = null, hasLabel = false) {
         super(state, state);
         if (controlPt === null) {
             this.controlPt = new Pt(state.x, state.y - state.radius * 4);

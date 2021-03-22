@@ -22,7 +22,7 @@ class State extends Pt {
         canvas.drawCircle(this, this.radius, colour);
     }
 
-    drawAllEdges(canvas, color = 'black', shouldDrawVertex = false) {
+    drawAllEdges(canvas, color = this.colour, shouldDrawVertex = false) {
         for (let i = 0; i < this.outEdges.length; i++) {
             this.outEdges[i].draw(canvas, shouldDrawVertex, 'red');
         }
@@ -41,6 +41,11 @@ class State extends Pt {
                 edge.draw(canvas);
             }
         }
+    }
+
+    drawWithEdges(canvas, color = this.colour, shouldDrawVertex = false) {
+        this.draw(canvas, color, shouldDrawVertex);
+        this.drawAllEdges(canvas, color, shouldDrawVertex);
     }
 
     makeOutEdgeTo(tail, edge = null) {
