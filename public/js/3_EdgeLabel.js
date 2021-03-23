@@ -27,9 +27,7 @@ class EdgeLabel {
     }
 
     focusIfNotEmpty() {
-        console.log('in focusifnotempty');
         if (this.textInput.value.length !== 0) {
-            console.log('should focus');
             this.textInput.focus();
         }
     }

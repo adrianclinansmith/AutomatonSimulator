@@ -5,12 +5,21 @@ body {
     text-align: center;
 }
 
+#DynamicCanvas {
+    z-index: 4;
+}
+
 #CanvasDiv {
     background-color:#ebe9e9;
     width: 1000px;
     height: 700px; 
     position: relative;
     margin: 0 auto;
+    z-index: 1;
+}
+
+#StaticCanvas {
+    z-index: 2;
 }
 
 canvas {

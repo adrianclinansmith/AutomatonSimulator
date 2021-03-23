@@ -42,7 +42,6 @@ class Edge extends Curve {
         // console.log('itertions: ' + iterations);
         this.endPt = curve.bezier(t);
         this.startPt = curve.bezier(1 - t);
-        console.log(`startPt: ${this.startPt}, endPt: ${this.endPt}`);
     }
 
     draw(canvas, colour = 'black', shouldDrawVertex = false) {
@@ -79,7 +78,7 @@ class NonLoopEdge extends Edge {
     constructor(head, tail, controlPt = null, hasLabel = false) {
         super(head, tail);
         if (controlPt === null) {
-            this.controlPt = head.addPt(tail, 0.5);
+            this.controlPt = head.ptBetween(tail);
         } else {
             this.controlPt = controlPt;
         }
@@ -95,7 +94,7 @@ class NonLoopEdge extends Edge {
     // the line between the head and tail. Here it's in point-slope form.
     axisOfSymmetry(x, inverse = false) {
         const slope = this.axisOfSymmetrySlope();
-        const midPt = this.startPt.addPt(this.endPt, 0.5);
+        const midPt = this.startPt.ptBetween(this.endPt);
         if (inverse) {
             return (x - midPt.y) / slope + midPt.x;
         }
@@ -118,7 +117,7 @@ class NonLoopEdge extends Edge {
             !(controlIsForward || tailIsAboveHead)) {
             controlDistanceFromMid *= -1;
         }
-        const midPt = this.startPt.addPt(this.endPt, 0.5);
+        const midPt = this.startPt.ptBetween(this.endPt);
         const m = this.axisOfSymmetrySlope();
         this.controlPt = midPt.ptAlongSlope(m, controlDistanceFromMid);
         this.calculateEndspointsArrowAndLabel();
@@ -130,11 +129,16 @@ class NonLoopEdge extends Edge {
         const vertex = new Pt();
         vertex.x = Math.abs(slope) < 1 ? pt.x : this.axisOfSymmetry(pt.y, true);
         vertex.y = Math.abs(slope) < 1 ? this.axisOfSymmetry(pt.x) : pt.y;
-        const midPt = this.startPt.addPt(this.endPt, 0.5);
-        const vertexHeight = vertex.distanceTo(midPt);
-        const c1 = midPt.ptAlongSlope(slope, vertexHeight * 2);
-        const c2 = midPt.ptAlongSlope(slope, vertexHeight * -2);
-        this.controlPt = vertex.closestTo(c1, c2);
+        const midPt = this.startPt.ptBetween(this.endPt);
+        let vertexHeight = vertex.distanceTo(midPt);
+        if (vertex.distanceTo(this.head.ptBetween(this.tail)) < 10) {
+            this.controlPt = this.head.ptBetween(this.tail);
+            vertexHeight = 0;
+        } else {
+            const c1 = midPt.ptAlongSlope(slope, vertexHeight * 2);
+            const c2 = midPt.ptAlongSlope(slope, vertexHeight * -2);
+            this.controlPt = vertex.closestTo(c1, c2);
+        }
         this.controlDistanceFromMid = vertexHeight * 2;
         const head = this.head;
         const tail = this.tail;

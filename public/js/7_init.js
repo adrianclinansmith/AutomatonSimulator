@@ -37,6 +37,9 @@ canvasDiv.addEventListener('mousedown', event => {
     const mousePt = Pt.mouseEventPtInElement(event, canvasDiv);
     mouseIsDown = true;
     const toSelect = graph.elementContains(mousePt);
+    if (event.shiftKey) {
+        console.log('pressed shift');
+    }
     if (toSelect === selected) {
         return;
     }
@@ -77,6 +80,10 @@ canvasDiv.addEventListener('mouseup', event => {
         handleMouseUpOnState();
     }
     selectedTail = false;
+});
+
+canvasDiv.addEventListener('dblclick', event => {
+    console.log('dbclick');
 });
 
 // ****************************************************************

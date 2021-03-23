@@ -53,11 +53,17 @@ class Pt {
         return new Pt(x, y);
     }
 
+    ptBetween(otherPt) {
+        const x = (this.x + otherPt.x) / 2;
+        const y = (this.y + otherPt.y) / 2;
+        return new Pt(x, y);
+    }
+
     closestTo(p1, p2) {
         return this.distanceTo(p1) < this.distanceTo(p2) ? p1 : p2;
     }
 
-    contains(otherPt, radius) {
+    contains(otherPt, radius = 0) {
         const distance = this.distanceTo(otherPt);
         return distance <= radius ? this : false;
     }

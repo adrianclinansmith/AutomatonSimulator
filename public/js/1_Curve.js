@@ -87,9 +87,9 @@ class Curve {
         return [x1, x2];
     }
 
-    setArrowhead() {
-        const tip = this.endPt;
-        const ptForSlope = this.bezier(0.01);
+    setArrowhead(atT = 0) {
+        const tip = this.bezier(atT);
+        const ptForSlope = this.bezier(atT + 0.01);
         // src: http://www.dbp-consulting.com/tutorials/canvas/CanvasArrow.html
         const angle = Math.atan2(ptForSlope.y - tip.y, ptForSlope.x - tip.x);
         const theta = Math.PI / 4;
