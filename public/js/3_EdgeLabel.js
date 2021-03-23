@@ -26,10 +26,18 @@ class EdgeLabel {
         this.readjustLabel();
     }
 
+    focus() {
+        this.textInput.focus();
+    }
+
     focusIfNotEmpty() {
-        if (this.textInput.value.length !== 0) {
-            this.textInput.focus();
+        if (!this.isEmpty()) {
+            this.focus();
         }
+    }
+
+    isEmpty() {
+        return this.textInput.value.length === 0;
     }
 
     labelContains(pt) {
@@ -48,32 +56,30 @@ class EdgeLabel {
         const horizontalAnchor = this.horizontalAnchor;
         const t = this.bezierT;
         const location = this.edge.bezier(t);
-        const labelHeight = this.textInput.scrollHeight;
-        const labelWidth = this.textInput.scrollWidth;
+        const height = this.textInput.scrollHeight + 5;
+        const width = this.textInput.scrollWidth + 5;
         const deriv = this.edge.bezierDerivative(t);
         // console.log(`t: ${t}, d: (${deriv.x}, ${deriv.y})`);
         // the curve is more horizontal at t
         if (Math.abs(deriv.x) > Math.abs(deriv.y)) {
             // top anchor
             if (verticalAnchor === 'top') {
-                const topString = `${location.y}px`;
-                this.textInput.style.top = topString;
+                this.textInput.style.top = `${location.y}px`;
             // bottom anchor
             } else {
-                const topString = `${location.y - labelHeight}px`;
-                this.textInput.style.top = topString;
+                this.textInput.style.top = `${location.y - height}px`;
             }
             // mid-horizontal anchor
             if (Math.abs(deriv.y) < 60) {
                 let dy = deriv.y;
                 if (this.edge.head.x > this.edge.tail.x) dy *= -1;
                 if (verticalAnchor === 'top') dy *= -1;
-                const leftString = `${location.x - (labelWidth / 2) * (dy / 60 + 1)}px`;
+                const leftString = `${location.x - (width / 2) * (dy / 60 + 1)}px`;
                 this.textInput.style.left = leftString;
             // right anchor
             } else if ((deriv.x * deriv.y > 0 && verticalAnchor === 'top') ||
                         (deriv.x * deriv.y <= 0 && verticalAnchor === 'bottom')) {
-                this.textInput.style.left = `${location.x - labelWidth}px`;
+                this.textInput.style.left = `${location.x - width}px`;
             // left anchor
             } else {
                 this.textInput.style.left = `${location.x}px`;
@@ -82,17 +88,17 @@ class EdgeLabel {
         } else {
             // left anchor
             if (horizontalAnchor === 'left') {
-                this.textInput.style.left = `${location.x}px`;
+                this.textInput.style.left = `${location.x + 5}px`;
             // right anchor
             } else {
-                this.textInput.style.left = `${location.x - labelWidth}px`;
+                this.textInput.style.left = `${location.x - width}px`;
             }
             // mid-vertical anchor
             if (Math.abs(deriv.x) < 60) {
                 let dx = deriv.x;
                 if (this.edge.head.y > this.edge.tail.y) dx *= -1;
                 if (horizontalAnchor === 'left') dx *= -1;
-                const topString = `${location.y - (labelHeight / 2) * (dx / 60 + 1)}px`;
+                const topString = `${location.y - (height / 2) * (dx / 60 + 1)}px`;
                 this.textInput.style.top = topString;
             // top anchor
             } else if ((deriv.x * deriv.y > 0 && horizontalAnchor === 'right') ||
@@ -100,13 +106,13 @@ class EdgeLabel {
                 this.textInput.style.top = `${location.y}px`;
             // bottom anchor
             } else {
-                this.textInput.style.top = `${location.y - labelHeight}px`;
+                this.textInput.style.top = `${location.y - height}px`;
             }
         }
     }
 
     slideLabel(pt) {
-        if (this.textInput.value.length === 0) {
+        if (this.isEmpty()) {
             return;
         }
         let t = this.bezierT;
@@ -151,5 +157,15 @@ class EdgeLabel {
         }
         this.bezierT = t;
         this.readjustLabel();
+    }
+
+    writeToCanvas(canvas) {
+        const textInput = this.textInput;
+        const font = window.getComputedStyle(textInput, null).getPropertyValue('font');
+        canvas.context.font = font;
+        const x = Number(textInput.style.left.replace(/[^.\d]/g, ''));
+        const y = Number(textInput.style.top.replace(/[^.\d]/g, ''));
+        canvas.context.fillStyle = 'black';
+        canvas.context.fillText(textInput.value, x, y + textInput.scrollHeight);
     }
 }

@@ -13,6 +13,23 @@ class Graph {
         return this.states.push(state);
     }
 
+    drawAllExcept(exceptElement) {
+        for (const state of this.states) {
+            for (const outEdge of state.outEdges) {
+                if (exceptElement !== outEdge &&
+                    exceptElement !== outEdge.head &&
+                    exceptElement !== outEdge.tail) {
+                    outEdge.draw(this.staticCanvas);
+                }
+            }
+        }
+        for (const state of this.states) {
+            if (state !== exceptElement) {
+                state.draw(this.staticCanvas);
+            }
+        }
+    }
+
     drawToDynamic(element, colour = this.dynamicColour, shouldDrawVertex = true) {
         element.draw?.(this.dynamicCanvas, colour, shouldDrawVertex);
         element.drawAllEdges?.(this.dynamicCanvas, colour, shouldDrawVertex);
@@ -32,20 +49,7 @@ class Graph {
 
     redrawAllExcept(exceptElement) {
         this.staticCanvas.clear();
-        for (const state of this.states) {
-            if (state !== exceptElement) {
-                state.draw(this.staticCanvas);
-            }
-        }
-        for (const state of this.states) {
-            for (const outEdge of state.outEdges) {
-                if (exceptElement !== outEdge &&
-                    exceptElement !== outEdge.head &&
-                    exceptElement !== outEdge.tail) {
-                    outEdge.draw(this.staticCanvas);
-                }
-            }
-        }
+        this.drawAllExcept(exceptElement);
     }
 
     redrawToDynamic(element, colour = this.dynamicColour, shouldDrawVertex = true) {
@@ -53,7 +57,7 @@ class Graph {
         this.drawToDynamic(element, colour, shouldDrawVertex);
     }
 
-    sendToBack(state) {
+    sendToFront(state) {
         const i = this.states.indexOf(state);
         if (i > -1) {
             this.states.splice(i, 1);
@@ -70,5 +74,13 @@ class Graph {
             }
         }
         return false;
+    }
+
+    drawLabelsToCanvas() {
+        for (const state of this.states) {
+            for (const edge of state.outEdges) {
+                edge.label?.writeToCanvas(this.staticCanvas);
+            }
+        }
     }
 }

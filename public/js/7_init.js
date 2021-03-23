@@ -21,7 +21,6 @@ graph.add(new State(canvasDiv.offsetWidth / 2 - rad * 4, 400, rad));
 graph.add(new State(canvasDiv.offsetWidth / 2 + rad * 4, 400, rad));
 graph.states[0].makeOutEdgeTo(graph.states[1]);
 graph.states[0].outEdges[0].label = new EdgeLabel(graph.states[0].outEdges[0]);
-console.log(graph.states);
 
 graph.redrawAllExcept();
 
@@ -38,6 +37,9 @@ canvasDiv.addEventListener('mousedown', event => {
     const mousePt = Pt.mouseEventPtInElement(event, canvasDiv);
     mouseIsDown = true;
     const toSelect = graph.elementContains(mousePt);
+    if (toSelect instanceof State) {
+        toSelect.offset = toSelect.minusPt(mousePt);
+    }
     if (event.shiftKey) {
         console.log('pressed shift');
     }
@@ -45,10 +47,8 @@ canvasDiv.addEventListener('mousedown', event => {
         return;
     }
     selected = toSelect;
-    if (selected instanceof State) {
-        graph.sendToBack(selected);
-    }
     if (!(selected instanceof EdgeLabel)) {
+        graph.sendToFront(selected);
         graph.redrawAllExcept(selected);
         graph.redrawToDynamic(selected);
     }
@@ -88,6 +88,8 @@ canvasDiv.addEventListener('mouseup', event => {
 
 canvasDiv.addEventListener('dblclick', event => {
     console.log('dbclick');
+    event.preventDefault();
+    event.stopPropagation();
 });
 
 // ****************************************************************
@@ -104,7 +106,7 @@ function handleMouseMoveOnEdge(mousePt) {
 
 function handleMouseMoveOnState(mousePt) {
     if (!newEdgeButton.isPressed) {
-        selected.setCenter(mousePt);
+        selected.setCenter(mousePt.addPt(selected.offset));
         graph.redrawToDynamic(selected);
         return;
     }
@@ -131,7 +133,11 @@ function handleMouseUpOnState() {
     }
     if (selectedTail) {
         selected.makeOutEdgeTo(selectedTail, newEdge);
+        graph.sendToFront(selectedTail);
         newEdge.label = new EdgeLabel(newEdge);
+        newEdge.label.focus();
+        selected = newEdge;
+        graph.redrawAllExcept(selected);
     }
     graph.redrawToDynamic(selected);
 }
@@ -145,6 +151,8 @@ newStateButton.angle = Math.PI / -2;
 
 const newEdgeButton = document.getElementById('NewEdgeButton');
 newEdgeButton.isPressed = false;
+
+const asPngButton = document.getElementById('AsPngButton');
 
 newStateButton.addEventListener('click', () => {
     const angle = newStateButton.angle;
@@ -171,4 +179,21 @@ newEdgeButton.addEventListener('click', () => {
         canvasDiv.style.cursor = '';
         newEdgeButton.style.borderStyle = '';
     }
+});
+
+asPngButton.addEventListener('click', () => {
+    dynamicCanvas.clear();
+    staticCanvas.clear();
+    staticCanvas.fill('#ebe9e9');
+    graph.drawAllExcept();
+    graph.drawLabelsToCanvas();
+
+    const downloadLink = document.createElement('a');
+    downloadLink.setAttribute('download', 'graph.png');
+    staticCanvas.element.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        downloadLink.setAttribute('href', url);
+        downloadLink.click();
+    });
+    graph.redrawAllExcept();
 });

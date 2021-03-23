@@ -65,6 +65,13 @@ class Canvas {
         this.context.fillText(text, atPt.x, atPt.y);
     }
 
+    fill(colour) {
+        const width = this.element.width;
+        const height = this.element.height;
+        this.context.fillStyle = colour;
+        this.context.fillRect(0, 0, width, height);
+    }
+
     linearBezier(t, p0, p1) {
         const x = (1 - t) * p0.x + t * p1.x;
         const y = (1 - t) * p0.y + t * p1.y;
