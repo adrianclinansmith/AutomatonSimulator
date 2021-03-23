@@ -10,7 +10,7 @@ class Graph {
     }
 
     add(state) {
-        this.states.push(state);
+        return this.states.push(state);
     }
 
     drawToDynamic(element, colour = this.dynamicColour, shouldDrawVertex = true) {
@@ -20,8 +20,7 @@ class Graph {
 
     elementContains(pt) {
         let selected;
-        let i;
-        for (i = this.states.length - 1; i >= 0; i--) {
+        for (let i = this.states.length - 1; i >= 0; i--) {
             const state = this.states[i];
             selected = state.contains(pt) || state.outEdgeContains(pt);
             if (selected) {
@@ -52,6 +51,15 @@ class Graph {
     redrawToDynamic(element, colour = this.dynamicColour, shouldDrawVertex = true) {
         this.dynamicCanvas.clear();
         this.drawToDynamic(element, colour, shouldDrawVertex);
+    }
+
+    sendToBack(state) {
+        const i = this.states.indexOf(state);
+        if (i > -1) {
+            this.states.splice(i, 1);
+            this.states.push(state);
+        }
+        return i > -1;
     }
 
     stateContains(pt) {

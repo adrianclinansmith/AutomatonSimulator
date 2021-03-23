@@ -21,6 +21,7 @@ graph.add(new State(canvasDiv.offsetWidth / 2 - rad * 4, 400, rad));
 graph.add(new State(canvasDiv.offsetWidth / 2 + rad * 4, 400, rad));
 graph.states[0].makeOutEdgeTo(graph.states[1]);
 graph.states[0].outEdges[0].label = new EdgeLabel(graph.states[0].outEdges[0]);
+console.log(graph.states);
 
 graph.redrawAllExcept();
 
@@ -44,9 +45,11 @@ canvasDiv.addEventListener('mousedown', event => {
         return;
     }
     selected = toSelect;
+    if (selected instanceof State) {
+        graph.sendToBack(selected);
+    }
     if (!(selected instanceof EdgeLabel)) {
         graph.redrawAllExcept(selected);
-        console.log(selected);
         graph.redrawToDynamic(selected);
     }
 });
