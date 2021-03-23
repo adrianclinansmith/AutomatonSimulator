@@ -60,17 +60,7 @@ class Curve {
     }
 
     contains(pt) {
-        const ts = this.bezierInverse(pt);
-        for (const t of ts) {
-            if (isNaN(t) || t > 1 || t < 0) {
-                continue;
-            }
-            const ptAtT = this.bezier(t);
-            if (ptAtT.contains(pt, 5)) {
-                return true;
-            }
-        }
-        return false;
+        return this.tForPt(pt) !== false;
     }
 
     draw(canvas, colour = 'black') {
@@ -99,5 +89,19 @@ class Curve {
         const corner1 = new Pt(tip.x - Math.cos(angle1) * h, tip.y - Math.sin(angle1) * h);
         const corner2 = new Pt(tip.x - Math.cos(angle2) * h, tip.y - Math.sin(angle2) * h);
         this.arrowhead = { tip, corner1, corner2 };
+    }
+
+    tForPt(pt) {
+        const ts = this.bezierInverse(pt);
+        for (const t of ts) {
+            if (isNaN(t) || t > 1 || t < 0) {
+                continue;
+            }
+            const ptAtT = this.bezier(t);
+            if (ptAtT.contains(pt, 5)) {
+                return t;
+            }
+        }
+        return false;
     }
 }

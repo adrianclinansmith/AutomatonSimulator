@@ -10,9 +10,11 @@ class EdgeLabel {
         const textInput = document.createElement('input');
         textInput.setAttribute('type', 'text');
         textInput.setAttribute('class', 'EdgeLabel');
+        textInput.autocapitalize = 'off';
+        textInput.autocomplete = 'off';
+        textInput.spellcheck = false;
         const thisLabel = this;
         textInput.oninput = function() {
-            console.log('oninput');
             const textWidth = textInput.value.length || 1;
             textInput.style.width = textWidth + 'ch';
             thisLabel.readjustLabel();
@@ -108,6 +110,14 @@ class EdgeLabel {
             } else {
                 this.textInput.style.top = `${location.y - height}px`;
             }
+        }
+    }
+
+    sendLabelTo(pt) {
+        const t = this.edge.tForPt(pt);
+        if (t !== false) {
+            this.bezierT = t;
+            this.readjustLabel();
         }
     }
 

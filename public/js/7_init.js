@@ -78,7 +78,6 @@ canvasDiv.addEventListener('mouseup', event => {
     if (selected instanceof EdgeLabel) {
         selected.focusIfNotEmpty();
     } else if (selected instanceof Edge) {
-        selected.label.textInput.focus();
         selected.onVertex = false;
     } else if (selected instanceof State) {
         handleMouseUpOnState();
@@ -87,9 +86,11 @@ canvasDiv.addEventListener('mouseup', event => {
 });
 
 canvasDiv.addEventListener('dblclick', event => {
-    console.log('dbclick');
-    event.preventDefault();
-    event.stopPropagation();
+    if (selected instanceof Edge) {
+        const mousePt = Pt.mouseEventPtInElement(event, canvasDiv);
+        selected.label.sendLabelTo(mousePt);
+        selected.label.focus();
+    }
 });
 
 // ****************************************************************
