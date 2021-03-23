@@ -2,36 +2,20 @@
 
 // eslint-disable-next-line no-unused-vars
 class Graph {
-    constructor() {
+    constructor(staticCanvas, dynamicCanvas) {
+        this.staticCanvas = staticCanvas;
+        this.dynamicCanvas = dynamicCanvas;
         this.states = [];
+        this.dynamicColour = 'red';
     }
 
     add(state) {
         this.states.push(state);
     }
 
-    draw(canvas, exceptElement) {
-        canvas.clear();
-        for (const state of this.states) {
-            if (state !== exceptElement) {
-                state.draw(canvas);
-            }
-        }
-        for (const state of this.states) {
-            for (const outEdge of state.outEdges) {
-                if (exceptElement !== outEdge &&
-                    exceptElement !== outEdge.head &&
-                    exceptElement !== outEdge.tail) {
-                    outEdge.draw(canvas);
-                }
-            }
-        }
-    }
-
-    drawElement(element, canvas, colour, shouldDrawVertex) {
-        canvas.clear();
-        element.draw?.(canvas, colour, shouldDrawVertex);
-        element.drawAllEdges?.(canvas, colour, shouldDrawVertex);
+    drawToDynamic(element, colour = this.dynamicColour, shouldDrawVertex = true) {
+        element.draw?.(this.dynamicCanvas, colour, shouldDrawVertex);
+        element.drawAllEdges?.(this.dynamicCanvas, colour, shouldDrawVertex);
     }
 
     elementContains(pt) {
@@ -45,6 +29,29 @@ class Graph {
             }
         }
         return false;
+    }
+
+    redrawAllExcept(exceptElement) {
+        this.staticCanvas.clear();
+        for (const state of this.states) {
+            if (state !== exceptElement) {
+                state.draw(this.staticCanvas);
+            }
+        }
+        for (const state of this.states) {
+            for (const outEdge of state.outEdges) {
+                if (exceptElement !== outEdge &&
+                    exceptElement !== outEdge.head &&
+                    exceptElement !== outEdge.tail) {
+                    outEdge.draw(this.staticCanvas);
+                }
+            }
+        }
+    }
+
+    redrawToDynamic(element, colour = this.dynamicColour, shouldDrawVertex = true) {
+        this.dynamicCanvas.clear();
+        this.drawToDynamic(element, colour, shouldDrawVertex);
     }
 
     stateContains(pt) {

@@ -13,7 +13,7 @@ const canvasDiv = document.getElementById('CanvasDiv');
 const staticCanvas = new Canvas('StaticCanvas');
 const dynamicCanvas = new Canvas('DynamicCanvas');
 
-const graph = new Graph();
+const graph = new Graph(staticCanvas, dynamicCanvas);
 
 const rad = 30;
 
@@ -22,7 +22,7 @@ graph.add(new State(canvasDiv.offsetWidth / 2 + rad * 4, 400, rad));
 graph.states[0].makeOutEdgeTo(graph.states[1]);
 graph.states[0].outEdges[0].label = new EdgeLabel(graph.states[0].outEdges[0]);
 
-graph.draw(staticCanvas);
+graph.redrawAllExcept();
 
 // ****************************************************************
 // Canvas Div Event Listeners
@@ -45,8 +45,9 @@ canvasDiv.addEventListener('mousedown', event => {
     }
     selected = toSelect;
     if (!(selected instanceof EdgeLabel)) {
-        graph.draw(staticCanvas, selected);
-        graph.drawElement(selected, dynamicCanvas, 'red', true);
+        graph.redrawAllExcept(selected);
+        console.log(selected);
+        graph.redrawToDynamic(selected);
     }
 });
 
@@ -95,31 +96,30 @@ function handleMouseMoveOnEdge(mousePt) {
         return;
     }
     selected.slideVertex(mousePt);
-    dynamicCanvas.clear();
-    selected.draw(dynamicCanvas, 'red', true);
+    graph.redrawToDynamic(selected);
 }
 
 function handleMouseMoveOnState(mousePt) {
-    dynamicCanvas.clear();
     if (!newEdgeButton.isPressed) {
         selected.setCenter(mousePt);
-        selected.drawWithEdges(dynamicCanvas, 'red', true);
+        graph.redrawToDynamic(selected);
         return;
     }
+    dynamicCanvas.clear();
     selectedTail = graph.stateContains(mousePt);
     if (!selectedTail) {
         newEdge = new NonLoopEdge(selected, mousePt);
     } else if (selected !== selectedTail) {
         newEdge = new NonLoopEdge(selected, selectedTail);
-        selectedTail.draw(dynamicCanvas, 'red');
+        graph.drawToDynamic(selectedTail);
     } else {
         const m = selected.slopeTo(mousePt);
         const c1 = selected.ptAlongSlope(m, selected.radius * 3);
         const c2 = selected.ptAlongSlope(m, selected.radius * -3);
         newEdge = new LoopEdge(selected, mousePt.closestTo(c1, c2));
     }
-    newEdge.draw(dynamicCanvas, 'red');
-    selected.drawWithEdges(dynamicCanvas, 'red', true);
+    graph.drawToDynamic(newEdge);
+    graph.drawToDynamic(selected);
 }
 
 function handleMouseUpOnState() {
@@ -130,8 +130,7 @@ function handleMouseUpOnState() {
         selected.makeOutEdgeTo(selectedTail, newEdge);
         newEdge.label = new EdgeLabel(newEdge);
     }
-    dynamicCanvas.clear();
-    selected.drawWithEdges(dynamicCanvas, 'red', true);
+    graph.redrawToDynamic(selected);
 }
 
 // ****************************************************************
@@ -150,7 +149,7 @@ newStateButton.addEventListener('click', () => {
     const x = canvasDiv.offsetWidth / 2 + rad * Math.cos(angle);
     const y = canvasDiv.offsetHeight - rad * (2 + Math.sin(angle)) - 5;
     graph.add(new State(x, y, rad));
-    graph.draw(staticCanvas, selected);
+    graph.redrawAllExcept(selected);
     newStateButton.angle += pi / 2;
     if (Math.abs(newStateButton.angle - 3 * pi / 2) < 0.01) {
         newStateButton.angle = pi / -4;
